@@ -59,7 +59,8 @@ class WPCOM_Legacy_Redirector {
 
 			if ( $redirect_uri ) {
 				header( 'X-legacy-redirect: HIT' );
-				wp_safe_redirect( $redirect_uri, 301 );
+				$redirect_status = apply_filters( 'wpcom_legacy_redirector_$redirect_status', 301, $url );
+				wp_safe_redirect( $redirect_uri, $redirect_status );
 				exit;
 			}
 		}
@@ -128,8 +129,12 @@ class WPCOM_Legacy_Redirector {
 
 		if ( $redirect_post_id ) {
 			$redirect_post = get_post( $redirect_post_id );
+			if ( ! $redirect_post instanceof WP_Post ) {
+				// If redirect post object doesn't exist, reset cache
+				wp_cache_set( $url_hash, 0, self::CACHE_GROUP );
 
-			if ( 0 !== $redirect_post->post_parent ) {
+				return false;
+			} elseif ( 0 !== $redirect_post->post_parent ) {
 				return get_permalink( $redirect_post->post_parent );
 			} elseif ( ! empty( $redirect_post->post_excerpt ) ) {
 				return esc_url_raw( $redirect_post->post_excerpt );
@@ -140,14 +145,14 @@ class WPCOM_Legacy_Redirector {
 	}
 
 	static function get_redirect_post_id( $url ) {
-		global $wpdb;
-
 		$url_hash = self::get_url_hash( $url );
 
-		$redirect_post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::POST_TYPE, $url_hash ) );
+		$redirect_post = get_page_by_path( $url_hash, OBJECT, array( self::POST_TYPE ) );
+		$redirect_post_id = 0;
 
-		if ( ! $redirect_post_id )
-			$redirect_post_id = 0;
+		if ( $redirect_post instanceof WP_Post ) {
+			$redirect_post_id = $redirect_post->ID;
+		}
 
 		return $redirect_post_id;
 	}
