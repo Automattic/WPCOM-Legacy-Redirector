@@ -59,7 +59,7 @@ class WPCOM_Legacy_Redirector {
 
 			if ( $redirect_uri ) {
 				header( 'X-legacy-redirect: HIT' );
-				$redirect_status = apply_filters( 'wpcom_legacy_redirector_$redirect_status', 301, $url );
+				$redirect_status = apply_filters( 'wpcom_legacy_redirector_redirect_status', 301, $url );
 				wp_safe_redirect( $redirect_uri, $redirect_status );
 				exit;
 			}
