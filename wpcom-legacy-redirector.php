@@ -145,14 +145,14 @@ class WPCOM_Legacy_Redirector {
 	}
 
 	static function get_redirect_post_id( $url ) {
-		global $wpdb;
-
 		$url_hash = self::get_url_hash( $url );
 
-		$redirect_post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::POST_TYPE, $url_hash ) );
+		$redirect_post = get_page_by_path( $url_hash, OBJECT, array( self::POST_TYPE ) );
+		$redirect_post_id = 0;
 
-		if ( ! $redirect_post_id )
-			$redirect_post_id = 0;
+		if ( $redirect_post instanceof WP_Post ) {
+			$redirect_post_id = $redirect_post->ID;
+		}
 
 		return $redirect_post_id;
 	}
