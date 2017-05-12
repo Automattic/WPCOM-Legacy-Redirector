@@ -135,7 +135,9 @@ class WPCOM_Legacy_Redirector {
 
 				return false;
 			} elseif ( 0 !== $redirect_post->post_parent ) {
-				return get_permalink( $redirect_post->post_parent );
+				// Return home_url if post_parent does not exist.
+				$uri = get_permalink( $redirect_post->post_parent );
+				return false !== $uri ? $uri : home_url();
 			} elseif ( ! empty( $redirect_post->post_excerpt ) ) {
 				return esc_url_raw( $redirect_post->post_excerpt );
 			}
