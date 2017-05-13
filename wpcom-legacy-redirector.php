@@ -26,6 +26,10 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require( __DIR__ . '/includes/wp-cli.php' );
 }
 
+require( __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php' );
+
+require( __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php' );
+
 class WPCOM_Legacy_Redirector {
 	const POST_TYPE = 'vip-legacy-redirect';
 	const CACHE_GROUP = 'vip-legacy-redirect-2';
@@ -33,6 +37,7 @@ class WPCOM_Legacy_Redirector {
 	static function start() {
 		add_action( 'init', array( __CLASS__, 'init' ) );
 		add_filter( 'template_redirect', array( __CLASS__, 'maybe_do_redirect' ), 0 ); // hook in early, before the canonical redirect
+		add_action( 'admin_menu', array( new WPCOM_Legacy_Redirector_UI, 'admin_menu' ) );
 	}
 	
 	static function init() {
