@@ -26,6 +26,10 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require( __DIR__ . '/includes/wp-cli.php' );
 }
 
+require( __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php' );
+
+require( __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php' );
+
 class WPCOM_Legacy_Redirector {
 	const POST_TYPE = 'vip-legacy-redirect';
 	const CACHE_GROUP = 'vip-legacy-redirect-2';
@@ -33,6 +37,7 @@ class WPCOM_Legacy_Redirector {
 	static function start() {
 		add_action( 'init', array( __CLASS__, 'init' ) );
 		add_filter( 'template_redirect', array( __CLASS__, 'maybe_do_redirect' ), 0 ); // hook in early, before the canonical redirect
+		add_action( 'admin_menu', array( new WPCOM_Legacy_Redirector_UI, 'admin_menu' ) );
 	}
 	
 	static function init() {
@@ -57,7 +62,7 @@ class WPCOM_Legacy_Redirector {
 		if ( $request_path ) {
 			$redirect_uri = self::get_redirect_uri( $request_path );
 
-			if ( $redirect_uri ) {
+			if ( false !== $redirect_uri && ! is_wp_error( $redirect_uri ) ) {
 				header( 'X-legacy-redirect: HIT' );
 				$redirect_status = apply_filters( 'wpcom_legacy_redirector_redirect_status', 301, $url );
 				wp_safe_redirect( $redirect_uri, $redirect_status );
@@ -86,7 +91,11 @@ class WPCOM_Legacy_Redirector {
 
 		$from_url_hash = self::get_url_hash( $from_url );
 
-		if ( false !== self::get_redirect_uri( $from_url ) ) {
+		$redirect_uri = self::get_redirect_uri( $from_url );
+		if ( is_wp_error( $redirect_uri ) ) {
+			return $redirect_uri;
+		}
+		if ( false !== $redirect_uri ) {
 			return new WP_Error( 'duplicate-redirect-uri', 'A redirect for this URI already exists' );
 		}
 
@@ -111,11 +120,16 @@ class WPCOM_Legacy_Redirector {
 		return true;
 	}
 
+	/**
+	 * @param $url
+	 *
+	 * @return false|string|\WP_Error
+	 */
 	static function get_redirect_uri( $url ) {
-		
+
 		$url = self::normalise_url( $url );
 		if ( is_wp_error( $url ) ) {
-			return false;
+			return $url;
 		}
 
 		$url_hash = self::get_url_hash( $url );
@@ -135,7 +149,13 @@ class WPCOM_Legacy_Redirector {
 
 				return false;
 			} elseif ( 0 !== $redirect_post->post_parent ) {
-				return get_permalink( $redirect_post->post_parent );
+				// Return home_url if post_parent does not exist.
+				$uri = get_permalink( $redirect_post->post_parent );
+				if ( false !== $uri ) {
+					return $uri;
+				}
+
+				return new WP_Error( 'redirect-to-failed', 'Trying to redirect to a post that does not exist.' );;
 			} elseif ( ! empty( $redirect_post->post_excerpt ) ) {
 				return esc_url_raw( $redirect_post->post_excerpt );
 			}
