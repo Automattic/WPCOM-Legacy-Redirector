@@ -292,4 +292,4 @@ class WPCOM_404_Redirect_Manager_CLI extends WP_CLI_Command {
 
 }
 
-WP_CLI::add_command( '404-redirect-manager', 'WPCOM_404_Redirect_Manager' );
+WP_CLI::add_command( '404-redirect-manager', 'WPCOM_404_Redirect_Manager_CLI' );
