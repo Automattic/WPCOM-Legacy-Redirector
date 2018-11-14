@@ -1,9 +1,9 @@
-=== WPCOM Legacy Redirector ===
-Contributors: automattic, wpcomvip, batmoo, betzster, davidbinda, olope, emrikol, philipjohn
+=== 404 Redirect Manager ===
+Contributors: automattic, wpcomvip, batmoo, betzster, davidbinda, olope, emrikol, philipjohn, mikeyarce
 Tags: redirects, redirector, redirect
 Requires at least: 4.5
 Tested up to: 4.5.3
-Stable tag: 1.2.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,11 +26,21 @@ Please contact us before using this plugin.
 
 == Changelog ==
 
+= 1.4.0 =
+* Rename of plugin from WPCOM Legacy Redirector to 404 Redirect Manager
+* Addition of UI for adding redirects
+* Added validation for adding redirects
+* Added `skip-validation` flag for CLI.
+
+= 1.3.0 =
+* Cleanup of PHP Notices
+* Addition of `wpcom_404_redirect_manager_preserve_query_params` filter to allow for the whitelisting of params that should be passed through unmodified to the redirected url.
+
 = 1.2.0 =
 * Composer support
-* Introduced `wpcom_legacy_redirector_redirect_status` filter for redirect status code  (props spacedmonkey)
+* Introduced `wpcom_404_redirect_manager_redirect_status` filter for redirect status code  (props spacedmonkey)
 * Reset cache when a redirect post does not exist
-* Introduce the `wpcom_legacy_redirector_allow_insert` filter to enable inserts outside of WP CLI
+* Introduce the `wpcom_404_redirect_manager_allow_insert` filter to enable inserts outside of WP CLI
 * Fix for WP-CLI check
 
 props spacedmonkey, bswatson 

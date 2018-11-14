@@ -1,6 +1,6 @@
 {
   "name"       : "automattic/wpcom-legacy-redirector",
-  "description": "WordPress plugin for handling large volumes of legacy redirects in a scalable manner.",
+  "description": "WordPress plugin for handling 404 redirects in a scalable manner.",
   "homepage"   : "https://github.com/Automattic/WPCOM-Legacy-Redirector",
   "type"       : "wordpress-plugin",
   "license"    : "GPL-2.0+",

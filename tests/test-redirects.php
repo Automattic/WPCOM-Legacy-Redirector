@@ -1,6 +1,6 @@
 <?php
 
-class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
+class WPCOM_404_Redirect_Manager_Test extends WP_UnitTestCase {
 
 	/**
 	 * Makes sure the foundational stuff is sorted so tests work
@@ -49,10 +49,10 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 	 * @dataProvider get_redirect_data
 	 */
 	function test_redirect( $from, $to ) {
-		$redirect = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from, $to, false );
+		$redirect = WPCOM_404_Redirect_Manager::insert_legacy_redirect( $from, $to, false );
 		$this->assertTrue( $redirect, 'insert_legacy_redirect failed' );
 
-		$redirect = WPCOM_Legacy_Redirector::get_redirect_uri( $from );
+		$redirect = WPCOM_404_Redirect_Manager::get_redirect_uri( $from );
 		$this->assertEquals( $redirect, $to, 'get_redirect_uri failed' );
 	}
 
@@ -101,7 +101,7 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 	 * @dataProvider get_protected_redirect_data
 	 */
 	function test_protected_query_redirect( $from, $to, $protected_from, $protected_to ) {
-		add_filter( 'wpcom_legacy_redirector_preserve_query_params', function( $preserved_params ){
+		add_filter( 'wpcom_404_redirect_manager_preserve_query_params', function( $preserved_params ){
  			array_push( $preserved_params,
 				'utm_source',
 				'utm_medium',
@@ -110,10 +110,10 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 			return $preserved_params;
 		} );
 
-		$redirect = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from, $to, false );
+		$redirect = WPCOM_404_Redirect_Manager::insert_legacy_redirect( $from, $to, false );
 		$this->assertTrue( $redirect, 'insert_legacy_redirect failed' );
 
-		$redirect = WPCOM_Legacy_Redirector::get_redirect_uri( $protected_from );
+		$redirect = WPCOM_404_Redirect_Manager::get_redirect_uri( $protected_from );
 		$this->assertEquals( $redirect, $protected_to, 'get_redirect_uri failed' );
 	}
 
