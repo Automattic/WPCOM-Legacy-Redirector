@@ -117,5 +117,263 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 		$this->assertEquals( $redirect, $protected_to, 'get_redirect_uri failed' );
 	}
 
-}
+	public function get_external_url_redirects() {
+		return array(
+			'external_url' => array(
+				'redirect' => array(
+					'to' => array(
+						'raw' => 'http://google.com',
+						'formatted' => 'http://google.com',
+					),
+				),
+			),
+			'external_url_with_force_ssl' => array(
+				'redirect' => array(
+					'to' => array(
+						'raw' => 'http://google.com',
+						'formatted' => 'https://google.com',
+					),
+				),
+			),
+		);
+	}
 
+	/**
+	 * Test that URLs to invalid hosts will not validate.
+	 *
+	 * @dataProvider get_external_url_redirects
+	 */
+	function test_invalid_url_redirect( $redirect ) {
+		$validation = WPCOM_Legacy_Redirector::validate_url_redirect( $redirect, get_post_types() );
+		$this->assertTrue( is_wp_error( $validation ) );
+	}
+
+	function allow_redirects_to_google( $hosts ) {
+		$hosts[] = 'google.com';
+		return $hosts;
+	}
+
+	/**
+	 * Test that URLs to valid hosts will validate.
+	 *
+	 * @dataProvider get_external_url_redirects
+	 */
+	function test_valid_url_redirect( $redirect ) {
+		add_filter( 'allowed_redirect_hosts' , array( $this, 'allow_redirects_to_google' ) , 10 );
+
+		$validation = WPCOM_Legacy_Redirector::validate_url_redirect( $redirect, get_post_types() );
+		$this->assertTrue( $validation );
+	}
+
+	public function get_invalid_post_redirects() {
+		return array(
+			'no_parent' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 0,
+						'status' => 'publish',
+						'post_type' => 'post',
+					),
+				),
+			),
+			'unpublished_post' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'draft',
+						'post_type' => 'post',
+					),
+
+				),
+			),
+			'private_post' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'private',
+						'post_type' => 'post',
+					),
+				),
+			),
+			'auto_draft' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'auto_draft',
+						'post_type' => 'post',
+					),
+				),
+			),
+			'non_public_post_type' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'publish',
+						'post_type' => 'not_a_post_type',
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Test that URLs to valid hosts will validate.
+	 *
+	 * @dataProvider get_invalid_post_redirects
+	 */
+	function test_invalid_post_redirect( $redirect ) {
+		$validation = WPCOM_Legacy_Redirector::validate_post_redirect( $redirect, get_post_types() );
+		$this->assertTrue( is_wp_error( $validation ) );
+	}
+
+	public function get_valid_post_redirects() {
+		return array(
+			'published' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'publish',
+						'post_type' => 'post',
+					),
+				),
+			),
+			'attachment' => array(
+				'redirect' => array(
+					'parent' => array(
+						'id' => 1,
+						'status' => 'inherit',
+						'post_type' => 'attachment',
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Test that URLs to valid hosts will validate.
+	 *
+	 * @dataProvider get_valid_post_redirects
+	 */
+	function test_valid_post_redirect( $redirect ) {
+		$validation = WPCOM_Legacy_Redirector::validate_post_redirect( $redirect, get_post_types() );
+		$this->assertTrue( $validation );
+	}
+
+	public function get_failing_verified_post_redirects() {
+		return array(
+			'no_redirect_status' => array(
+				'redirect' => array(
+					'to' => array(
+						'formatted' => home_url( '/redirect_here' ),
+					),
+				),
+			),
+			'trailing_slash' => array(
+				'redirect' => array(
+					'from' => array(
+						'raw' => '1',
+						'formatted' => '/post1',
+					),
+					'to' => array(
+						'formatted' => 'http://google.com',
+					),
+					'redirect' => array(
+						'status' => 200,
+						'count' => 1,
+						'resulting_url' => 'http://google.com/',
+					),
+				),
+			),
+			'mismatch' => array(
+				'redirect' => array(
+					'from' => array(
+						'raw' => '1',
+						'formatted' => '/post1',
+					),
+					'to' => array(
+						'formatted' => 'http://google.com',
+					),
+					'redirect' => array(
+						'status' => 200,
+						'count' => 1,
+						'resulting_url' => '/post1',
+					),
+				),
+			),
+			'too_many_redirects' => array(
+				'redirect' => array(
+					'from' => array(
+						'raw' => '1',
+						'formatted' => '/post1',
+					),
+					'to' => array(
+						'formatted' => '/redirect_location',
+					),
+					'redirect' => array(
+						'status' => 200,
+						'count' => 2,
+						'resulting_url' => '/somewhere_else',
+					),
+				),
+			),
+			'redirect_to_404' => array(
+				'redirect' => array(
+					'from' => array(
+						'raw' => '1',
+						'formatted' => '/post1',
+					),
+					'to' => array(
+						'formatted' => '/somewhere_else',
+					),
+					'redirect' => array(
+						'status' => 404,
+						'count' => 1,
+						'resulting_url' => '/somewhere_else',
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Test for verification failure notices.
+	 *
+	 * @dataProvider get_failing_verified_post_redirects
+	 */
+	function test_verify_failing_redirect_status( $redirect ) {
+		$verification = WPCOM_Legacy_Redirector::verify_redirect_status( $redirect, get_post_types() );
+		$this->assertTrue( is_wp_error( $verification ) );
+	}
+
+	public function get_passing_verified_post_redirects() {
+		return array(
+			'match' => array(
+				'redirect' => array(
+					'from' => array(
+						'raw' => '1',
+						'formatted' => '/post1',
+					),
+					'to' => array(
+						'formatted' => 'http://google.com',
+					),
+					'redirect' => array(
+						'status' => 200,
+						'count' => 1,
+						'resulting_url' => 'http://google.com',
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Test for verification failure notices.
+	 *
+	 * @dataProvider get_passing_verified_post_redirects
+	 */
+	function test_verify_bad_redirect_status( $redirect ) {
+		$verification = WPCOM_Legacy_Redirector::verify_redirect_status( $redirect, get_post_types() );
+		$this->assertTrue( $verification );
+	}
+
+}
