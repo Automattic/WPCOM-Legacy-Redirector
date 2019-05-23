@@ -69,9 +69,10 @@ class WPCOM_Legacy_Redirector {
  	 *
  	 * @param string $from_url URL or path that should be redirected; should have leading slash if path.
  	 * @param int|string $redirect_to The post ID or URL to redirect to.
- 	 * @return bool|WP_Error Error if invalid redirect URL specified or if the URI already has a rule; false if not is_admin, true otherwise.
+ 	 * @param bool $mode add|update if "update", we will update existing redirects for from_url, otherwise we raise an error on an existing redirect
+ 	 * @return bool|WP_Error Error if invalid redirect URL specified or if the URI already has a rule and we aren't updating or if the update failed; false if something is very wrong (not admin, not CLI), true otherwise.
  	 */
-	static function insert_legacy_redirect( $from_url, $redirect_to ) {
+	static function insert_legacy_redirect( $from_url, $redirect_to, $mode='add' ) {
 
 		if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) && ! is_admin() && ! apply_filters( 'wpcom_legacy_redirector_allow_insert', false ) ) {
 			// never run on the front end
@@ -85,7 +86,7 @@ class WPCOM_Legacy_Redirector {
 
 		$from_url_hash = self::get_url_hash( $from_url );
 
-		if ( false !== self::get_redirect_uri( $from_url ) ) {
+		if ( false !== self::get_redirect_uri( $from_url ) && ( 'add' === $mode ) ) {
 			return new WP_Error( 'duplicate-redirect-uri', 'A redirect for this URI already exists' );
 		}
 
@@ -103,10 +104,55 @@ class WPCOM_Legacy_Redirector {
 			return new WP_Error( 'invalid-redirect-url', 'Invalid redirect_to param; should be a post_id or a URL' );
 		}
 
-		wp_insert_post( $args );
+		switch ( $mode ) {
+			case 'update':
+				$args[ 'ID' ] = self::get_redirect_post_id( $from_url, false );
+				if ( 0 === wp_update_post( $args ) ) {
+					return new WP_Error( 'failed-redirect-update', 'Redirect update failed for unknown reason' );
+				}
+				break;
+			case 'add':
+			default:
+				wp_insert_post( $args );
+				break;
+		}
 
 		wp_cache_delete( $from_url_hash, self::CACHE_GROUP );
 
+		return true;
+	}
+
+	/**
+ 	 * @param string $from_url URL or path for the redirect we'd like to delete.
+ 	 * @return bool|WP_Error WP_Error if something is amiss with the delete; true otherwise.
+ 	 */
+
+	static function delete_legacy_redirect( $from_url ) {
+		if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) && ! is_admin() ) {
+			// never run on the front end
+			return false;
+		}
+
+		$from_url = self::normalise_url( $from_url );
+		
+		if ( is_wp_error( $from_url ) ) {
+			return false;
+		}
+
+		$post_id = self::get_redirect_post_id( $from_url, false);
+
+		//sanity check that we are deleting only the correct post_type
+		if ( get_post_type( $post_id ) !== self::POST_TYPE ) {
+			return new WP_Error( 'failed-redirect-delete', 'Redirect delete attempted to delete a post of incorrect type.' );
+		}
+
+		if ( 0 !== $post_id ) {
+			wp_delete_post( $post_id, true );
+		}else{
+			return false;
+		}
+
+		wp_cache_delete( self::get_url_hash( $from_url ), self::CACHE_GROUP );
 		return true;
 	}
 
@@ -163,21 +209,31 @@ class WPCOM_Legacy_Redirector {
 		return false;
 	}
 
-	static function get_redirect_post_id( $url ) {
+	static function get_redirect_post_id( $url, $strict = true ) {
 		global $wpdb;
 
 		$url_hash = self::get_url_hash( $url );
 
 		$redirect_post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::POST_TYPE, $url_hash ) );
 
-		if ( ! $redirect_post_id )
+		if ( !$redirect_post_id && !$strict ) {
+			// if we have a trailing slash, try without.  If we don't try with
+			if ( substr( $url, -1 ) === '/' ) {
+				$url = rtrim( $url, '/' );
+			}else{
+				$url = $url . '/';
+			}
+
+			$url_hash = self::get_url_hash( $url );
+
+			$redirect_post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_name = %s LIMIT 1", self::POST_TYPE, $url_hash ) );
+		}
+
+		if ( !$redirect_post_id ) {
 			$redirect_post_id = 0;
+		}
 
 		return $redirect_post_id;
-	}
-
-	private static function get_url_hash( $url ) {
-		return md5( $url );
 	}
 
 	/**

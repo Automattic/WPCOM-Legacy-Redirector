@@ -83,13 +83,21 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
  	 * redirect_from_path,(redirect_to_post_id|redirect_to_path|redirect_to_url)
  	 *
  	 * @subcommand import-from-csv
- 	 * @synopsis --csv=<path-to-csv>
+ 	 * @synopsis --csv=<path-to-csv> [--update] [--delete]
  	 */
 	function import_from_csv( $args, $assoc_args ) {
 		define( 'WP_IMPORTING', true );
 
 		if ( empty( $assoc_args['csv'] ) || ! file_exists( $assoc_args['csv'] ) ) {
 			WP_CLI::error( "Invalid 'csv' file" );
+		}
+
+		if ( isset( $assoc_args[ 'update' ] ) ) {
+			$mode = 'update';
+		}elseif ( isset( $assoc_args[ 'delete' ] ) ) {
+			$mode = 'delete';
+		}else{
+			$mode = 'add';
 		}
 
 		global $wpdb;
@@ -99,10 +107,13 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 				$row++;
 				$redirect_from = $data[ 0 ];
 				$redirect_to = $data[ 1 ];
-				WP_CLI::line( "Adding (CSV) redirect for {$redirect_from} to {$redirect_to}" );
+				WP_CLI::line( "$mode (CSV) redirect for {$redirect_from} to {$redirect_to}" );
 				WP_CLI::line( "-- at $row" );
-				WPCOM_Legacy_Redirector::insert_legacy_redirect( $redirect_from, $redirect_to );
-
+				if ( $mode === 'update' || $mode === 'add' ) {
+					WPCOM_Legacy_Redirector::insert_legacy_redirect( $redirect_from, $redirect_to, $mode );
+				}else{
+					WPCOM_Legacy_Redirector::delete_legacy_redirect( $redirect_from );
+				}
 				if ( 0 == $row % 100 ) {
 					if ( function_exists( 'stop_the_insanity' ) )
 						stop_the_insanity();
