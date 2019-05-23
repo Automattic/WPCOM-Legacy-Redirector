@@ -26,6 +26,11 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 				'http://example.com'
 			),
 
+			'redirect_simple_trailslash' => array(
+				'/simple-redirect/',
+				'http://example.com'
+			),
+
 			'redirect_with_querystring' => array(
 				'/a-redirect?with=query-string',
 				'http://example.com'
