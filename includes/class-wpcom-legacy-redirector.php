@@ -69,16 +69,17 @@ class WPCOM_Legacy_Redirector {
 			return;
 		}
 
-		$url = wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
-
-		if ( ! empty( $_SERVER['QUERY_STRING'] ) ) {
-			$url .= '?' . $_SERVER['QUERY_STRING'];
-		}
-
-		$request_path = apply_filters( 'wpcom_legacy_redirector_request_path', $url );
+		$request_path = apply_filters( 'wpcom_legacy_redirector_request_path', self::get_current_url_path() );
 
 		if ( $request_path ) {
 			$redirect_uri = self::get_redirect_uri( $request_path );
+
+			if ( !$redirect_uri ) {
+				// trailing slash agnostic support to check if redirect exists by toggling slash based on current URL.
+				$request_path = apply_filters( 'wpcom_legacy_redirector_request_path', self::get_current_url_path( TRUE ) );
+				$redirect_uri = self::get_redirect_uri( $request_path );
+			}
+
 			if ( $redirect_uri ) {
 				header( 'X-legacy-redirect: HIT' );
 				$redirect_status = apply_filters( 'wpcom_legacy_redirector_redirect_status', 301, $url );
@@ -442,5 +443,32 @@ class WPCOM_Legacy_Redirector {
 				return $parent_slug;
 			}
 		}
+	}
+
+	/**
+ 	 * Returns current URL's relative path including the query string. Optionally add or remove trailig slash to get variant URL.
+ 	 * @param bool | $trailing_slash_toggle If TRUE, will return URL toggling the trailing slash on/off (i.e add slash if not present).
+ 	 * @return string | Will return the current URL path based via $_SERVER.
+ 	 */
+	static function get_current_url_path( $trailing_slash_toggle = false ) {
+
+		$url = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+
+		// Add the trailing slash if not present; or vice-versa to toggle it.
+		if ( $trailing_slash_toggle ) {
+			if ( substr( $url , -1 ) == '/' ) {
+				$url = rtrim( $url, '/' );
+			}
+			else {
+				$url .= "/";
+			}			
+		}
+	
+		if ( ! empty( $_SERVER['QUERY_STRING'] ) ) {
+			$url .= '?' . $_SERVER['QUERY_STRING'];
+		}
+
+		return $url;
+
 	}
 }
