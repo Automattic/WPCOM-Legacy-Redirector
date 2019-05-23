@@ -21,9 +21,9 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 
 	public function get_redirect_data() {
 		return array(
-			'redirect_simple' => array(
+			'redirect_simple'           => array(
 				'/simple-redirect',
-				'http://example.com'
+				'http://example.com',
 			),
 
 			'redirect_simple_trailslash' => array(
@@ -33,16 +33,16 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 
 			'redirect_with_querystring' => array(
 				'/a-redirect?with=query-string',
-				'http://example.com'
+				'http://example.com',
 			),
 
-			'redirect_with_hashes' => array(
+			'redirect_with_hashes'      => array(
 				// The plugin should strip the hash and only store the URL path.
 				'/hash-redirect#with-hash',
-				'http://example.com'
+				'http://example.com',
 			),
 
-			'redirect_unicode_in_path' => array(
+			'redirect_unicode_in_path'  => array(
 				// https://www.w3.org/International/articles/idn-and-iri/
 				'/JP納豆',
 				'http://example.com',
@@ -67,36 +67,36 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 	 *
 	 * @return array
 	 */
- 	public function get_protected_redirect_data() {
+	public function get_protected_redirect_data() {
 		return array(
-			'redirect_simple_protected' => array(
- 				'/simple-redirectA/',
- 				'http://example.com/',
- 				'/simple-redirectA/?utm_source=XYZ',
-				'http://example.com/?utm_source=XYZ'
+			'redirect_simple_protected'           => array(
+				'/simple-redirectA/',
+				'http://example.com/',
+				'/simple-redirectA/?utm_source=XYZ',
+				'http://example.com/?utm_source=XYZ',
 			),
 
 			'redirect_protected_with_querystring' => array(
 				'/b-redirect/?with=query-string',
 				'http://example.com/',
 				'/b-redirect/?with=query-string&utm_medium=123',
-				'http://example.com/?utm_medium=123'
+				'http://example.com/?utm_medium=123',
 			),
 
-			'redirect_protected_with_hashes' => array(
+			'redirect_protected_with_hashes'      => array(
 				// The plugin should strip the hash and only store the URL path.
 				'/hash-redirectA/#with-hash',
 				'http://example.com/',
 				'/hash-redirectA/?utm_source=SDF#with-hash',
- 				'http://example.com/?utm_source=SDF'
+				'http://example.com/?utm_source=SDF',
 			),
 
-			'redirect_multiple_protected' => array(
+			'redirect_multiple_protected'         => array(
 				'/simple-redirectC/',
 				'http://example.com/',
 				'/simple-redirectC/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
-				'http://example.com/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543'
-			)
+				'http://example.com/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
+			),
 		);
 	}
 
@@ -106,14 +106,18 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 	 * @dataProvider get_protected_redirect_data
 	 */
 	function test_protected_query_redirect( $from, $to, $protected_from, $protected_to ) {
-		add_filter( 'wpcom_legacy_redirector_preserve_query_params', function( $preserved_params ){
- 			array_push( $preserved_params,
-				'utm_source',
-				'utm_medium',
-				'utm_campaign'
-			);
-			return $preserved_params;
-		} );
+		add_filter(
+			'wpcom_legacy_redirector_preserve_query_params',
+			function( $preserved_params ) {
+				array_push(
+					$preserved_params,
+					'utm_source',
+					'utm_medium',
+					'utm_campaign'
+				);
+				return $preserved_params;
+			}
+		);
 
 		$redirect = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from, $to, false );
 		$this->assertTrue( $redirect, 'insert_legacy_redirect failed' );
