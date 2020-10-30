@@ -260,7 +260,7 @@ class WPCOM_Legacy_Redirector {
 			// Parse Query String to Associated Array.
 			parse_str( $query_params, $param_values );
 			// For every whitelisted param save value and strip from URL.
-			foreach ( $protected_params as $protected_param ) {
+			foreach ( $protected_params as $protected_param => $protected_param_value ) {
 				if ( ! empty( $param_values[ $protected_param ] ) ) {
 					$protected_param_values[ $protected_param ] = $param_values[ $protected_param ];
 					$url                                        = remove_query_arg( $protected_param, $url );
