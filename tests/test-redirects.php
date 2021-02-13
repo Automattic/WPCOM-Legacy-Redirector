@@ -96,7 +96,7 @@ class WpcomLegacyRedirectsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Verify that whitelisted parameters are maintained on final redirect urls.
+	 * Verify that safelisted parameters are maintained on final redirect urls.
 	 *
 	 * @dataProvider get_protected_redirect_data
 	 */

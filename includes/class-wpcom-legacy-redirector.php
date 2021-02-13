@@ -208,7 +208,7 @@ class WPCOM_Legacy_Redirector {
 				return new WP_Error( 'empty-postid', $message );
 			}
 			if ( ! wp_validate_redirect( $redirect_to ) ) {
-				$message = __( 'If you are doing an external redirect, make sure you whitelist the domain using the "allowed_redirect_hosts" filter.', 'wpcom-legacy-redirector' );
+				$message = __( 'If you are doing an external redirect, make sure you safelist the domain using the "allowed_redirect_hosts" filter.', 'wpcom-legacy-redirector' );
 				return new WP_Error( 'external-url-not-allowed', $message );
 			}
 			return array( $from_url, $redirect_to );
@@ -248,7 +248,7 @@ class WPCOM_Legacy_Redirector {
 			return false;
 		}
 
-		// White list of Params that should be pass through as is.
+		// Safe list of Params that should be pass through as is.
 		$protected_params       = apply_filters( 'wpcom_legacy_redirector_preserve_query_params', array(), $url );
 		$protected_param_values = array();
 		$param_values           = array();
@@ -259,7 +259,7 @@ class WPCOM_Legacy_Redirector {
 
 			// Parse Query String to Associated Array.
 			parse_str( $query_params, $param_values );
-			// For every whitelisted param save value and strip from URL.
+			// For every safelisted param save value and strip from URL.
 			foreach ( $protected_params as $protected_param => $protected_param_value ) {
 				if ( ! empty( $param_values[ $protected_param ] ) ) {
 					$protected_param_values[ $protected_param ] = $param_values[ $protected_param ];
@@ -285,9 +285,9 @@ class WPCOM_Legacy_Redirector {
 
 				return false;
 			} elseif ( 0 !== $redirect_post->post_parent ) {
-				return add_query_arg( $protected_param_values, get_permalink( $redirect_post->post_parent ) ); // Add Whitelisted Params to the Redirect URL.
+				return add_query_arg( $protected_param_values, get_permalink( $redirect_post->post_parent ) ); // Add Safelisted Params to the Redirect URL.
 			} elseif ( ! empty( $redirect_post->post_excerpt ) ) {
-				return add_query_arg( $protected_param_values, esc_url_raw( $redirect_post->post_excerpt ) ); // Add Whitelisted Params to the Redirect URL.
+				return add_query_arg( $protected_param_values, esc_url_raw( $redirect_post->post_excerpt ) ); // Add Safelisted Params to the Redirect URL.
 			}
 		}
 

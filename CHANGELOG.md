@@ -34,7 +34,7 @@ Requires PHP 5.6.
 ## [1.3.0] - 2016-03-29
 
 ### Added
-- `wpcom_legacy_redirector_preserve_query_params` filter to allow for the whitelisting of params that should be passed through to the redirected URL.
+- `wpcom_legacy_redirector_preserve_query_params` filter to allow for the safelisting of params that should be passed through to the redirected URL.
 
 ## Changed
 - Updated logic to check `wp_parse_url()` query component as the Request value will not be set for test purposes.
