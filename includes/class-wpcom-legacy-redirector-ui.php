@@ -101,6 +101,8 @@ class WPCOM_Legacy_Redirector_UI {
 					// Check if it's the Home URL
 					if ( true === WPCOM_Legacy_Redirector::check_if_excerpt_is_home( $excerpt ) ) {
 						echo esc_html( $excerpt );
+					} elseif ( 0 === strpos( $excerpt, get_option( 'home' ) ) ) {
+						echo esc_html( str_replace( get_option( 'home' ), '', $excerpt ) );
 					} elseif ( 0 === strpos( $excerpt, 'http' ) ) {
 						echo esc_url_raw( $excerpt );
 					} else {
