@@ -27,6 +27,12 @@ class RedirectsTest extends TestCase {
 				'/JP納豆',
 				'http://example.com',
 			),
+			'redirect_unicode_in_path_with_querystring'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/
+				'/فوتوغرافيا/?test=فوتوغرافيا',
+				'http://example.com',
+			),
+
 		);
 	}
 
@@ -76,6 +82,12 @@ class RedirectsTest extends TestCase {
 				'http://example.com/',
 				'/simple-redirectC/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
 				'http://example.com/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
+			),
+			'redirect_unicode_in_path_with_protected_querystring' => array(
+				'/فوتوغرافيا/',
+				'http://example.com',
+				'/فوتوغرافيا/?utm_medium=فوتوغرافيا',
+				'http://example.com?utm_medium=فوتوغرافيا',
 			),
 		);
 	}
