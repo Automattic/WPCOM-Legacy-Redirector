@@ -6,6 +6,23 @@ class RedirectsTest extends TestCase {
 
 	public function get_redirect_data() {
 		return array(
+			'redirect_relative_path'  => array(
+				'/non-existing-page',
+				'/test2',
+				home_url() . '/test2',
+			),
+			'redirect_unicode_in_path'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/
+				'/JP納豆',
+				'http://example.com',
+			),
+
+			'redirect_unicode_in_path'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/
+				'/فوتوغرافيا/?test=فوتوغرافيا',
+				'http://example.com',
+			),
+
 			'redirect_simple'           => array(
 				'/simple-redirect',
 				'http://example.com',
@@ -27,18 +44,36 @@ class RedirectsTest extends TestCase {
 				'/JP納豆',
 				'http://example.com',
 			),
+			'redirect_unicode_in_path_with_querystring'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/
+				'/فوتوغرافيا/?test=فوتوغرافيا',
+				'http://example.com',
+			),
+
 		);
 	}
 
 	/**
+	 * Test Redirect
+	 *
+	 * @param [type] $from Redirect from relative path.
+	 * @param [type] $to Redirect to url or relative path.
+	 * @param [type] $expected Expected redirected url if relative path was used for $to param.
+	 * @return void
+	 *
 	 * @dataProvider get_redirect_data
 	 */
-	function test_redirect( $from, $to ) {
+	function test_redirect( $from, $to, $expected = null ) {
+
 		$redirect = \WPCOM_Legacy_Redirector::insert_legacy_redirect( $from, $to, false );
 		$this->assertTrue( $redirect, 'insert_legacy_redirect failed' );
 
 		$redirect = \WPCOM_Legacy_Redirector::get_redirect_uri( $from );
-		$this->assertEquals( $redirect, $to, 'get_redirect_uri failed' );
+
+		if ( \is_null( $expected ) ) {
+			$expected = $to;
+		}
+		$this->assertEquals( $redirect, $expected, 'get_redirect_uri failed' );
 	}
 
 
@@ -76,6 +111,12 @@ class RedirectsTest extends TestCase {
 				'http://example.com/',
 				'/simple-redirectC/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
 				'http://example.com/?utm_source=XYZ&utm_medium=FALSE&utm_campaign=543',
+			),
+			'redirect_unicode_in_path_with_protected_querystring' => array(
+				'/فوتوغرافيا/',
+				'http://example.com',
+				'/فوتوغرافيا/?utm_medium=فوتوغرافيا',
+				'http://example.com?utm_medium=فوتوغرافيا',
 			),
 		);
 	}

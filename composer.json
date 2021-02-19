@@ -1,5 +1,4 @@
-{
-  "name": "automattic/wpcom-legacy-redirector",
+{                                                                                                                                                                                                                              "name": "automattic/wpcom-legacy-redirector",
   "type": "wordpress-plugin",
   "description": "WordPress plugin for handling large volumes of legacy redirects in a scalable manner.",
   "homepage": "https://github.com/Automattic/WPCOM-Legacy-Redirector",
@@ -41,3 +40,4 @@
     ]
   }
 }
+

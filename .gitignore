@@ -4,3 +4,4 @@
 /phpcs.xml
 /phpunit.xml
 /.phpunit.result.cache
+node_modules

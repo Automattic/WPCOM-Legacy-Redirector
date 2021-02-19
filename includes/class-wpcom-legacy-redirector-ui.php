@@ -84,7 +84,7 @@ class WPCOM_Legacy_Redirector_UI {
 	 * Provide warnings for possibly bad redirects.
 	 *
 	 * @param string $column The Column for the post_type table.
-	 * @param int $post_id  The Post ID.
+	 * @param int    $post_id  The Post ID.
 	 */
 	public function custom_vip_legacy_redirect_column( $column, $post_id ) {
 		switch ( $column ) {
@@ -125,10 +125,25 @@ class WPCOM_Legacy_Redirector_UI {
 				break;
 		}
 	}
+
+	/**
+	 * Get WP Home URL without path suffix
+	 *
+	 * @return string
+	 */
+	private function get_home_domain_without_path() {
+		$home_url_info = WPCOM_Legacy_Redirector::mb_parse_url( home_url() );
+		$return_url    = $home_url_info['scheme'] . '://' . $home_url_info['host'];
+
+		if( isset($home_url_info['port'] ) && $home_url_info['port'] ) {
+			$return_url .= ':' . $home_url_info['port'];
+		}
+		return $return_url;
+	}
 	/**
 	 * Modify the Row Actions for the vip-legacy-redirect post type.
 	 *
-	 * @param array $actions Default Actions.
+	 * @param array  $actions Default Actions.
 	 * @param object $post the current Post.
 	 */
 	public function modify_list_row_actions( $actions, $post ) {
@@ -155,6 +170,9 @@ class WPCOM_Legacy_Redirector_UI {
 					'validate_vip_legacy_redirect',
 					'_validate_redirect'
 				);
+				
+				// We need to keep here a code legacy for how original urls have been saved in DB.
+				$follow_home_domain = $this->get_home_domain_without_path();
 
 				// Add the Validate Link
 				$actions = array_merge(
@@ -164,6 +182,11 @@ class WPCOM_Legacy_Redirector_UI {
 							'<a href="%1$s">%2$s</a>',
 							esc_url( $validate_link ),
 							'Validate'
+						),
+						'follow' => sprintf(
+							'<a href="%1$s" target="_blank">%2$s</a>',
+							$follow_home_domain . esc_url( $post->post_title ),
+							'Follow'
 						),
 					)
 				);
@@ -177,7 +200,7 @@ class WPCOM_Legacy_Redirector_UI {
 	 * Return error data when validate check fails.
 	 *
 	 * @param string $validate String that passes back the validate result in order to output the right notice.
-	 * @param int $post_id The Post ID.
+	 * @param int    $post_id The Post ID.
 	 */
 	public function vip_legacy_redirect_sendback( $validate, $post_id ) {
 		$sendback = remove_query_arg( array( 'validate', 'ids' ), wp_get_referer() );
@@ -248,11 +271,20 @@ class WPCOM_Legacy_Redirector_UI {
 				);
 			} else {
 				$redirect_from = sanitize_text_field( $_POST['redirect_from'] );
+				
+				// We apply the home_url() prefix to $redirect_from.
+				$redirect_url_info = WPCOM_Legacy_Redirector::mb_parse_url( home_url() . $redirect_from);
+				$redirect_from = $redirect_url_info['path'];
+				if( isset( $redirect_url_info['query'] ) && $redirect_url_info['query'] ) {
+					$redirect_from .= '?' . $redirect_url_info['query'];
+				}
+				
 				$redirect_to   = sanitize_text_field( $_POST['redirect_to'] );
 				if ( WPCOM_Legacy_Redirector::validate( $redirect_from, $redirect_to ) ) {
 					$output = WPCOM_Legacy_Redirector::insert_legacy_redirect( $redirect_from, $redirect_to, true );
 					if ( true === $output ) {
-						$link       = '<a href="' . esc_url( $redirect_from ) . '" target="_blank">' . esc_url( $redirect_from ) . '</a>';
+						$follow_home_domain = $this->get_home_domain_without_path();
+						$link       = '<a href="' . $follow_home_domain . esc_url( $redirect_from ) . '" target="_blank">' . esc_url( $redirect_from ) . '</a>';
 						$messages[] = __( 'The redirect was added successfully. Check Redirect: ', 'wpcom-legacy-redirector' ) . $link;
 					} elseif ( is_wp_error( $output ) ) {
 						foreach ( $output->get_error_messages() as $error ) {
@@ -284,7 +316,7 @@ class WPCOM_Legacy_Redirector_UI {
 		// phpcs:ignore WordPress.Security.NonceVerification.NoNonceVerification -- Not being saved directly, only used to pre-populate field if there was an error on the last submission.
 		$redirect_from_value = isset( $_POST['redirect_from'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_from'] ) ) : '/';
 		// phpcs:ignore WordPress.Security.NonceVerification.NoNonceVerification -- Not being saved directly, only used to pre-populate field if there was an error on the last submission.
-		$redirect_to_value   = isset( $_POST['redirect_to'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) : '/';
+		$redirect_to_value = isset( $_POST['redirect_to'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) : '/';
 		?>
 		<style>
 		#redirect_from_preview:not(:empty),

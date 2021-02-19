@@ -1,0 +1,26 @@
+{
+  "name": "vip-404-redirect",
+  "version": "1.0.0",
+  "description": "WordPress plugin for handling legacy redirects in a scalable manner.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "composer": "composer install",
+    "test": "./vendor/bin/phpunit",
+    "phpcs": "./vendor/bin/phpcs --standard=WordPress-VIP-Go -sp --basepath=. --ignore=vendor ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Automattic/WPCOM-Legacy-Redirector.git"
+  },
+  "author": "WP VIP",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Automattic/WPCOM-Legacy-Redirector/issues"
+  },
+  "homepage": "https://github.com/Automattic/WPCOM-Legacy-Redirector#readme"
+}

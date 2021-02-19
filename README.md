@@ -21,6 +21,30 @@ Please contact us before using this plugin.
 - PHP 5.6+
 - WordPress 4.5+
 
+## Developement - Getting Started
+
+### Install Dependencies
+```
+npm install
+npm run composer
+```
+
+### Run PHPCS
+```
+npm run phpcs
+```
+
+### Run PHPUnit
+
+```
+npm run test
+```
+
+### Run XDebug with PHPUnit
+```
+./vendor/bin/phpunit -d xdebug.profiler_enable=on 
+```
+
 ## Change Log
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list of changes.
