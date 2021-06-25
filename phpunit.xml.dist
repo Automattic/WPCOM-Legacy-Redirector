@@ -21,7 +21,7 @@
 		verbose="true"
 	>
 	<testsuites>
-		<testsuite name="unit">
+		<testsuite name="WP_Tests">
 			<directory suffix="Test.php">./tests/Unit/</directory>
 		</testsuite>
 	</testsuites>

@@ -8,6 +8,8 @@
  * Author: Automattic / WordPress.com VIP
  * Author URI: https://vip.wordpress.com
  *
+ * @package WPCOM_Legacy_Redirect
+ *
  * Redirects are stored as a custom post type and use the following fields:
  *
  * - post_name for the md5 hash of the "from" path or URL.

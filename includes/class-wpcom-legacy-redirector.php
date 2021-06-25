@@ -1,4 +1,9 @@
 <?php
+/**
+ * Main plugin.
+ *
+ * @package WPCOM_Legacy_Redirect
+ */
 
 use \Automattic\LegacyRedirector\Capability;
 use \Automattic\LegacyRedirector\List_Redirects;
@@ -16,19 +21,19 @@ class WPCOM_Legacy_Redirector {
 	/**
 	 * Actions and filters.
 	 */
-	static function start() {
+	public static function start() {
 		add_action( 'init', array( __CLASS__, 'init' ) );
 		add_action( 'admin_init', array( __CLASS__, 'admin_init' ) );
-		add_filter( 'template_redirect', array( __CLASS__, 'maybe_do_redirect' ), 0 ); // hook in early, before the canonical redirect.
+		add_action( 'template_redirect', array( __CLASS__, 'maybe_do_redirect' ), 0 ); // hook in early, before the canonical redirect.
 		add_action( 'admin_menu', array( new WPCOM_Legacy_Redirector_UI(), 'admin_menu' ) );
-		add_filter( 'admin_enqueue_scripts', array( __CLASS__, 'wpcom_legacy_add_redirect_js' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'wpcom_legacy_add_redirect_js' ) );
 		add_filter( 'bulk_actions-edit-' . Post_Type::POST_TYPE, array( __CLASS__, 'remove_bulk_edit' ) );
 	}
 
 	/**
 	 * Initialize and register other classes during admin_init hook.
 	 */
-	static function admin_init() {
+	public static function admin_init() {
 		$capability = new Capability();
 		$capability->register();
 	}
@@ -36,7 +41,7 @@ class WPCOM_Legacy_Redirector {
 	/**
 	 * Initialize and register other classes.
 	 */
-	static function init() {
+	public static function init() {
 		$post_type = new Post_Type();
 		$post_type->register();
 
@@ -50,7 +55,7 @@ class WPCOM_Legacy_Redirector {
 	 * @param array $actions Current bulk actions available to drop-down.
 	 * @return array Available bulk actions minus edit functionality.
 	 */
-	static function remove_bulk_edit( $actions ) {
+	public static function remove_bulk_edit( $actions ) {
 		unset( $actions['edit'] );
 		return $actions;
 	}
@@ -58,17 +63,19 @@ class WPCOM_Legacy_Redirector {
 	/**
 	 * Performs redirect if current URL is a 404 and redirect rule exists.
 	 */
-	static function maybe_do_redirect() {
+	public static function maybe_do_redirect() {
 		// Avoid the overhead of running this on every single pageload.
 		// We move the overhead to the 404 page but the trade-off for site performance is worth it.
 		if ( ! is_404() ) {
 			return;
 		}
 
-		$url = wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+		$request_uri = filter_input( INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING );
+		$url         = wp_parse_url( $request_uri, PHP_URL_PATH );
 
-		if ( ! empty( $_SERVER['QUERY_STRING'] ) ) {
-			$url .= '?' . $_SERVER['QUERY_STRING'];
+		$query_string = filter_input( INPUT_SERVER, 'QUERY_STRING', FILTER_SANITIZE_STRING );
+		if ( ! empty( $query_string ) ) {
+			$url .= '?' . $query_string;
 		}
 
 		$request_path = apply_filters( 'wpcom_legacy_redirector_request_path', $url );
@@ -81,12 +88,12 @@ class WPCOM_Legacy_Redirector {
 				// Third argument introduced to support the x_redirect_by header to denote WP redirect source.
 				if ( version_compare( get_bloginfo( 'version' ), '5.1.0', '>=' ) ) {
 					wp_safe_redirect( $redirect_uri, $redirect_status, WPCOM_LEGACY_REDIRECTOR_PLUGIN_NAME );
+					exit;
 				} else {
 					header( 'X-legacy-redirect: HIT' );
 					wp_safe_redirect( $redirect_uri, $redirect_status );
+					exit;
 				}
-
-				exit;
 			}
 		}
 	}
@@ -103,7 +110,7 @@ class WPCOM_Legacy_Redirector {
 			return;
 		}
 
-		wp_enqueue_script( 'wpcom-legacy-redirector', plugins_url( '/../js/admin-add-redirects.js', __FILE__ ), [], WPCOM_LEGACY_REDIRECTOR_VERSION, true );
+		wp_enqueue_script( 'wpcom-legacy-redirector', plugins_url( '/../js/admin-add-redirects.js', __FILE__ ), array(), WPCOM_LEGACY_REDIRECTOR_VERSION, true );
 		wp_localize_script( 'wpcom-legacy-redirector', 'wpcomLegacyRedirector', array( 'siteurl' => get_option( 'siteurl' ) ) );
 	}
 
@@ -116,7 +123,7 @@ class WPCOM_Legacy_Redirector {
 	 * @param bool       $return_id   Return the insertd post ID if successful, rather than boolean true.
 	 * @return bool|WP_Error True or post ID if inserted; false if not permitted; otherwise error upon validation issue.
 	 */
-	static function insert_legacy_redirect( $from_url, $redirect_to, $validate = true, $return_id = false ) {
+	public static function insert_legacy_redirect( $from_url, $redirect_to, $validate = true, $return_id = false ) {
 		if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) && ! is_admin() && ! apply_filters( 'wpcom_legacy_redirector_allow_insert', false ) ) {
 			// Never run on the front end.
 			return false;
@@ -170,7 +177,7 @@ class WPCOM_Legacy_Redirector {
 	 * @param string $redirect_to URL to redirect to (destination).
 	 * @return array|WP_Error Error if invalid redirect URL specified; returns array of params otherwise.
 	 */
-	static function validate_urls( $from_url, $redirect_to ) {
+	public static function validate_urls( $from_url, $redirect_to ) {
 		if ( false !== Lookup::get_redirect_uri( $from_url ) ) {
 			return new WP_Error( 'duplicate-redirect-uri', 'A redirect for this URI already exists' );
 		}
@@ -303,12 +310,14 @@ class WPCOM_Legacy_Redirector {
 		if ( function_exists( 'vip_safe_wp_remote_get' ) ) {
 			$response = vip_safe_wp_remote_get( $url );
 		} else {
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
 			$response = wp_remote_get( $url );
 			// If it was an error, try again with no SSL verification, in case it was a self-signed certificate: https://github.com/Automattic/WPCOM-Legacy-Redirector/issues/64.
 			if ( is_wp_error( $response ) ) {
-				$args     = [
+				$args = array(
 					'sslverify' => false,
-				];
+				);
+				// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
 				$response = wp_remote_get( $url, $args );
 			}
 		}
@@ -331,6 +340,7 @@ class WPCOM_Legacy_Redirector {
 		if ( function_exists( 'wpcom_vip_get_page_by_path' ) ) {
 			$post_obj = wpcom_vip_get_page_by_path( $excerpt, OBJECT, $post_types );
 		} else {
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_page_by_path_get_page_by_path
 			$post_obj = get_page_by_path( $excerpt, OBJECT, $post_types );
 		}
 		if ( ! is_null( $post_obj ) ) {
@@ -390,6 +400,7 @@ class WPCOM_Legacy_Redirector {
 	 * @return bool|string True on success, false if parent not found, 'private' if not published.
 	 */
 	public static function vip_legacy_redirect_parent_id( $post ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Not being saved directly, only used to pre-populate field if there was an error on the last submission.
 		if ( isset( $_POST['redirect_to'] ) && true !== self::check_if_excerpt_is_home( $post ) ) {
 			if ( null !== get_post( $post ) && 'publish' === get_post_status( $post ) ) {
 				return true;
