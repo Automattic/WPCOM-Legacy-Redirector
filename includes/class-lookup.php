@@ -2,6 +2,8 @@
 
 namespace Automattic\LegacyRedirector;
 
+use Automattic\LegacyRedirector\Utils;
+
 final class Lookup {
 	const CACHE_GROUP = 'vip-legacy-redirect-2';
 
@@ -77,7 +79,7 @@ final class Lookup {
 		 * @param string   $url                    Normalized source URL.
 		 */
 		$preservable_param_keys = apply_filters( 'wpcom_legacy_redirector_preserve_query_params', array(), $url );
-		
+
 		if ( ! is_array( $preservable_param_keys ) ) {
 			throw new \UnexpectedValueException( 'wpcom_legacy_redirector_preserve_query_params must return an array.' );
 		}
@@ -89,8 +91,8 @@ final class Lookup {
 		$preserved_params       = array();
 
 		// Parse URL to get querystring parameters.
-		$url_query_params = wp_parse_url( $url, PHP_URL_QUERY );
-		
+		$url_query_params = Utils::mb_parse_url( $url, PHP_URL_QUERY );
+
 		// No parameters in URL, so return early.
 		if ( empty( $url_query_params ) ) {
 			return array();
@@ -101,6 +103,46 @@ final class Lookup {
 
 		// Extract and return the list of preservable keys (and their values).
 		return array_intersect_key( $url_params, array_flip( $preservable_param_keys ) );
+	}
+
+	/**
+	 * Get redirect data status and URL based on the provided URL.
+	 *
+	 * To make the redirection match, we take a full URL as $url parameter, decode it and keep
+	 * only the PATH and QUERY part of it to look for known matches.
+	 *
+	 * @param string $url  URL to find redirection for, can include a protocol and domain name,
+	 *                     we do the necessary stripping inside
+	 * @return false|array We return false or an array with target redirection path
+	 *                     and redirection code
+	 */
+	public static function get_redirect_data( $url ) {
+
+		// We need to decode the URL here to prevent $_SERVER issue from parsed data.
+		$url_info = Utils::mb_parse_url( urldecode( $url ) );
+
+		$path_to_match = $url_info['path'];
+		if ( isset( $url_info['query'] ) ) {
+			$path_to_match .= '?' . $url_info['query'];
+		}
+
+		$request_path = apply_filters( 'wpcom_legacy_redirector_request_path', $path_to_match );
+
+		if ( ! $request_path ) {
+			return false;
+		}
+
+		$redirect_uri = self::get_redirect_uri( $request_path );
+		if ( ! $redirect_uri ) {
+			return false;
+		}
+
+		$redirect_status = apply_filters( 'wpcom_legacy_redirector_redirect_status', 301, $url );
+
+		return array(
+			'redirect_uri'    => $redirect_uri,
+			'redirect_status' => $redirect_status,
+		);
 	}
 
 	/**

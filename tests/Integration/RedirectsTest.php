@@ -9,6 +9,18 @@ final class RedirectsTest extends TestCase {
 
 	public function get_redirect_data() {
 		return array(
+			'redirect_unicode_in_path'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/ .
+				'/JP納豆',
+				'http://example.com',
+			),
+
+			'redirect Arabic in path'  => array(
+				// https://www.w3.org/International/articles/idn-and-iri/ .
+				'/فوتوغرافيا/?test=فوتوغرافيا',
+				'http://example.com',
+			),
+
 			'redirect_simple'           => array(
 				'/simple-redirect',
 				'http://example.com',
@@ -25,11 +37,6 @@ final class RedirectsTest extends TestCase {
 				'http://example.com',
 			),
 
-			'redirect_unicode_in_path'  => array(
-				// https://www.w3.org/International/articles/idn-and-iri/
-				'/JP納豆',
-				'http://example.com',
-			),
 		);
 	}
 

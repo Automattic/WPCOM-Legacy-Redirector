@@ -33,6 +33,7 @@ require __DIR__ . '/includes/class-capability.php';
 require __DIR__ . '/includes/class-post-type.php';
 require __DIR__ . '/includes/class-list-redirects.php';
 require __DIR__ . '/includes/class-lookup.php';
+require __DIR__ . '/includes/class-utils.php';
 require __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php';
 require __DIR__ . '/includes/class-wpcom-legacy-redirector.php';
 

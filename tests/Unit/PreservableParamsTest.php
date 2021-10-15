@@ -77,22 +77,25 @@ final class PreservableParamsTest extends TestCase {
 			),
 			'Associative array returned from filter' => array(
 				'https://example.com?foo=123&bar=456',
-				array( 'foo' => 0, 'baz' => 1 ),
+				array(
+					'foo' => 0,
+					'baz' => 1,
+				),
 				new UnexpectedValueException(),
 			),
 		);
 	}
 
 	/**
-	* @covers \Automattic\LegacyRedirector\Lookup::get_preservable_querystring_params_from_url
-	* @dataProvider data_get_preservable_querystring_params_from_url
-	*/
+	 * @covers \Automattic\LegacyRedirector\Lookup::get_preservable_querystring_params_from_url
+	 * @uses \Automattic\LegacyRedirector\Utils::mb_parse_url
+	 * @dataProvider data_get_preservable_querystring_params_from_url
+	 */
 	public function test_get_preservable_querystring_params_from_url( $url, $preservable_param_keys, $expected ) {
 
 		Monkey\Filters\expectApplied( 'wpcom_legacy_redirector_preserve_query_params' )
 			->once()
 			->andReturn( $preservable_param_keys );
-
 
 		Monkey\Functions\stubs(
 			array(
