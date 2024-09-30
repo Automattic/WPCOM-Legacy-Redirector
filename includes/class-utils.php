@@ -37,6 +37,10 @@ final class Utils {
 
 		$parts = wp_parse_url( $encoded_url, $component );
 
+		if ( null === $parts ) {
+			return null;
+		}
+
 		if ( false === $parts ) {
 			throw new \InvalidArgumentException( 'Malformed URL: ' . $url );
 		}
