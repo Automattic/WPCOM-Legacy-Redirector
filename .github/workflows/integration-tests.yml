@@ -64,7 +64,7 @@ jobs:
         run: sudo systemctl start mysql.service
 
       - name: Install WordPress environment
-        run: composer prepare ${{ matrix.wordpress }}
+        run: composer prepare-ci ${{ matrix.wordpress }}
 
       - name: Run integration tests (single site)
         run: composer test-integration
