@@ -8,7 +8,6 @@
 
 # Node.js
 /node_modules/
-/package-lock.json
 
 # wp-env local overrides
 /.wp-env.override.json
