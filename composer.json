@@ -15,12 +15,15 @@
 		"source": "https://github.com/Automattic/WPCOM-Legacy-Redirector"
 	},
 	"require": {
-		"php": ">=7.4",
+		"php": "^8.1",
 		"composer/installers": "^1.0 || ^2.0"
 	},
 	"require-dev": {
 		"automattic/vipwpcs": "^3.0",
+		"mockery/mockery": "^1.6",
+		"php-parallel-lint/php-parallel-lint": "^1.0",
 		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"phpunit/phpunit": "^9.6",
 		"wp-cli/entity-command": "^2",
 		"wp-cli/extension-command": "^2",
 		"wp-cli/wp-cli-tests": "^4",
@@ -46,59 +49,32 @@
 	"scripts": {
 		"behat": "run-behat-tests",
 		"behat-rerun": "rerun-behat-tests",
-		"cs": "@php ./vendor/bin/phpcs -q",
-		"cs-fix": [
-			"@php ./vendor/bin/phpcbf -q"
-		],
+		"cs": "phpcs",
+		"cbf": "phpcbf",
 		"i18n": [
 			"@php wp i18n make-pot . ./languages/wpcom-legacy-redirector.pot"
 		],
-		"lint": [
-			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git"
-		],
-		"lint-ci": [
-			"@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle"
-		],
-		"prepare-ci": [
-			"bash bin/install-wp-tests.sh wordpress_test root root localhost"
-		],
+		"lint": "parallel-lint . --exclude vendor --exclude node_modules --exclude .git",
 		"prepare-behat-tests": "install-package-tests",
 		"test": [
-			"@php composer test-unit",
-			"@php composer test-integration"
+			"@test:unit",
+			"@test:integration"
 		],
-		"test-coverage": [
-			"@php ./vendor/phpunit/phpunit/phpunit --coverage-text --coverage-html=coverage && echo coverage/index.html"
-		],
-		"test-integration": [
-			"@php ./vendor/phpunit/phpunit/phpunit --testdox -c phpunit-integration.xml.dist --no-coverage"
-		],
-		"test-integration-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@test-integration"
-		],
-		"test-unit": [
-			"@php ./vendor/phpunit/phpunit/phpunit --testdox --no-coverage"
-		],
-		"test-unit-ms": [
-			"@putenv WP_MULTISITE=1",
-			"@test-unit"
-		]
+		"test:unit": "./vendor/bin/phpunit --testdox --no-coverage",
+		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
+		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
 	},
 	"scripts-descriptions": {
 		"behat": "Run Behat tests",
 		"behat-rerun": "Rerun failed Behat tests",
-		"cs": "Run PHP Code Sniffer",
-		"cs-fix": "Run PHP Code Sniffer and fix violations",
+		"cs": "Run PHP CodeSniffer to check code style",
+		"cbf": "Run PHP CodeSniffer to fix code style issues",
 		"i18n": "Generate a POT file for translation",
-		"lint": "Run PHP linting",
-		"lint-ci": "Run PHP linting and send results to stdout",
-		"prepare-ci": "Prepare the environment for integration tests",
+		"lint": "Run PHP parallel lint to check for syntax errors",
 		"prepare-behat-tests": "Prepare the environment for Behat tests",
-		"test": "Run all tests for the WPCOM Legacy Redirector plugin",
-		"test-integration": "Run integration tests for the WPCOM Legacy Redirector plugin",
-		"test-integration-ms": "Run integration tests for the WPCOM Legacy Redirector plugin in multisite mode",
-		"test-unit": "Run unit tests for the WPCOM Legacy Redirector plugin",
-		"test-unit-ms": "Run unit tests for the WPCOM Legacy Redirector plugin in multisite mode"
+		"test": "Run all tests for the WPCOM Legacy Redirector plugin.",
+		"test:unit": "Run unit tests.",
+		"test:integration": "Run integration tests via wp-env.",
+		"test:integration-ms": "Run integration tests in multisite mode via wp-env."
 	}
 }

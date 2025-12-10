@@ -5,24 +5,19 @@
  * @package Automattic\LegacyRedirector
  */
 
+declare( strict_types=1 );
+
+namespace Automattic\LegacyRedirector\Tests\Integration;
+
 use Yoast\WPTestUtils\WPIntegration;
 
 require_once dirname( dirname( __DIR__ ) ) . '/vendor/yoast/wp-test-utils/src/WPIntegration/bootstrap-functions.php';
 
-$_tests_dir = getenv( 'WP_TESTS_DIR' );
+$_tests_dir = WPIntegration\get_path_to_wp_test_dir();
 
-if ( ! $_tests_dir ) {
-	$_tests_dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/wordpress-tests-lib';
-}
-
-// Forward custom PHPUnit Polyfills configuration to PHPUnit bootstrap file.
-$_phpunit_polyfills_path = getenv( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' );
-if ( false !== $_phpunit_polyfills_path ) {
-	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', $_phpunit_polyfills_path );
-}
-
-if ( ! file_exists( "{$_tests_dir}/includes/functions.php" ) ) {
-	echo "Could not find {$_tests_dir}/includes/functions.php, have you run bin/install-wp-tests.sh ?" . PHP_EOL; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+if ( empty( $_tests_dir ) ) {
+	echo 'ERROR: Could not find WordPress test library directory.' . PHP_EOL;
+	echo 'Make sure wp-env is running: npm run wp-env start' . PHP_EOL;
 	exit( 1 );
 }
 
@@ -32,26 +27,19 @@ require_once "{$_tests_dir}/includes/functions.php";
 /**
  * Manually load the plugin being tested.
  */
-function _manually_load_plugin() {
-	// Updated from default (__FILE__), since this bootstrap is an extra level down in tests/Integration/.
-	require dirname( dirname( __DIR__ ) ) . '/wpcom-legacy-redirector.php';
-}
-
-tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
-
-// Make sure the Composer autoload file has been generated.
-WPIntegration\check_composer_autoload_exists();
-
-// Start up the WP testing environment.
-require "{$_tests_dir}/includes/bootstrap.php";
+\tests_add_filter(
+	'muplugins_loaded',
+	function (): void {
+		// Updated from default (__FILE__), since this bootstrap is an extra level down in tests/Integration/.
+		require dirname( dirname( __DIR__ ) ) . '/wpcom-legacy-redirector.php';
+	}
+);
 
 /*
- * Register the custom autoloader to overload the PHPUnit MockObject classes when running on PHP 8.
- *
- * This function has to be called _last_, after the WP test bootstrap to make sure it registers
- * itself in FRONT of the Composer autoload (which also prepends itself to the autoload queue).
+ * Bootstrap WordPress. This will also load the Composer autoload file, the PHPUnit Polyfills
+ * and the custom autoloader for the TestCase and the mock object classes.
  */
-WPIntegration\register_mockobject_autoloader();
+WPIntegration\bootstrap_it();
 
 // Add custom test case.
 require __DIR__ . '/TestCase.php';

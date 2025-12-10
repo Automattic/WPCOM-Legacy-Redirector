@@ -1,0 +1,12 @@
+{
+  "name": "wpcom-legacy-redirector",
+  "version": "1.0.0",
+  "description": "WordPress plugin for handling large volumes of legacy redirects in a scalable manner.",
+  "private": true,
+  "scripts": {
+    "wp-env": "wp-env"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0"
+  }
+}
