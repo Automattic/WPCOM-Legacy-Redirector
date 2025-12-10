@@ -61,8 +61,8 @@
 			"@test:integration"
 		],
 		"test:unit": "./vendor/bin/phpunit --testdox --no-coverage",
-		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
-		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
+		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
+		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
 	},
 	"scripts-descriptions": {
 		"behat": "Run Behat tests",
