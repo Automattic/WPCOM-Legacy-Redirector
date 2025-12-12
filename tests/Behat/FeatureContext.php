@@ -266,11 +266,26 @@ PHP;
 		// Plugin is already loaded via .wp-env.json.
 		// Reset database and ensure plugin is activated.
 		$this->reset_database_state();
-		$this->run_wp_cli_command( 'plugin activate wpcom-legacy-redirector', false );
+
+		// Try activating with the full plugin path (handles different folder names in CI vs local).
+		// In CI, the folder is WPCOM-Legacy-Redirector (from GitHub repo name).
+		$this->run_wp_cli_command( 'plugin activate WPCOM-Legacy-Redirector/wpcom-legacy-redirector.php', false );
+
+		// If that fails, try the lowercase slug (for local development).
+		if ( 0 !== $this->exit_code ) {
+			$this->run_wp_cli_command( 'plugin activate wpcom-legacy-redirector', false );
+		}
+
+		// Check if plugin is active regardless of activation command result.
+		// The plugin might already be active, which would cause activation to "fail".
+		$this->run_wp_cli_command( 'plugin is-active WPCOM-Legacy-Redirector/wpcom-legacy-redirector.php', false );
+		if ( 0 !== $this->exit_code ) {
+			$this->run_wp_cli_command( 'plugin is-active wpcom-legacy-redirector', false );
+		}
 
 		if ( 0 !== $this->exit_code ) {
 			throw new RuntimeException(
-				'Failed to activate WPCOM Legacy Redirector plugin: ' . $this->output
+				'Failed to activate WPCOM Legacy Redirector plugin: ' . $this->output . ' ' . $this->error_output
 			);
 		}
 	}
