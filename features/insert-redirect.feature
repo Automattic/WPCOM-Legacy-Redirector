@@ -15,8 +15,10 @@ Feature: Inserting a redirect
       Success: Inserted /foo -> /bar
       """
 
+  @broken-wpenv
   Scenario: Insert a redirect to a safe URL
     # example.com seems to have an automatic bypass on allowed_redirect_hosts filter unlike other hosts.
+    # In wp-env, this bypass doesn't work the same way.
     When I run `wp wpcom-legacy-redirector insert-redirect /foo https://example.com`
     Then STDOUT should contain:
       """
