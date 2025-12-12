@@ -47,15 +47,14 @@
 		"sort-packages": true
 	},
 	"scripts": {
-		"behat": "run-behat-tests",
-		"behat-rerun": "rerun-behat-tests",
+		"behat": "behat --colors",
+		"behat-rerun": "behat --colors --rerun",
 		"cs": "phpcs",
 		"cbf": "phpcbf",
 		"i18n": [
 			"@php wp i18n make-pot . ./languages/wpcom-legacy-redirector.pot"
 		],
 		"lint": "parallel-lint . --exclude vendor --exclude node_modules --exclude .git",
-		"prepare-behat-tests": "install-package-tests",
 		"test": [
 			"@test:unit",
 			"@test:integration"
@@ -65,13 +64,12 @@
 		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
 	},
 	"scripts-descriptions": {
-		"behat": "Run Behat tests",
-		"behat-rerun": "Rerun failed Behat tests",
+		"behat": "Run Behat tests via wp-env",
+		"behat-rerun": "Rerun failed Behat tests via wp-env",
 		"cs": "Run PHP CodeSniffer to check code style",
 		"cbf": "Run PHP CodeSniffer to fix code style issues",
 		"i18n": "Generate a POT file for translation",
 		"lint": "Run PHP parallel lint to check for syntax errors",
-		"prepare-behat-tests": "Prepare the environment for Behat tests",
 		"test": "Run all tests for the WPCOM Legacy Redirector plugin.",
 		"test:unit": "Run unit tests.",
 		"test:integration": "Run integration tests via wp-env.",
