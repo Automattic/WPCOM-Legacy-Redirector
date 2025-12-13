@@ -1,0 +1,24 @@
+# Directories
+/.git/
+/.github/
+/bin/
+/features/
+/node_modules/
+/tests/
+/vendor/
+
+# Files
+.distignore
+.editorconfig
+.gitattributes
+.gitignore
+.phpcs.xml.dist
+.wp-env.json
+.wp-env.override.json
+behat.yml
+CHANGELOG.md
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpunit.xml.dist
