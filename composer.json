@@ -47,32 +47,33 @@
 		"sort-packages": true
 	},
 	"scripts": {
-		"behat": "behat --colors",
-		"behat-rerun": "behat --colors --rerun",
-		"cs": "phpcs",
-		"cbf": "phpcbf",
-		"i18n": [
-			"@php wp i18n make-pot . ./languages/wpcom-legacy-redirector.pot"
-		],
-		"lint": "parallel-lint . --exclude vendor --exclude node_modules --exclude .git",
-		"test": [
-			"@test:unit",
-			"@test:integration"
-		],
-		"test:unit": "./vendor/bin/phpunit --testdox --no-coverage",
-		"test:integration": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
-		"test:integration-ms": "npx wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
+		"coverage": "@php ./vendor/bin/phpunit --coverage-html ./build/coverage-html",
+		"coverage-ci": "@php ./vendor/bin/phpunit",
+		"cs": "@php ./vendor/bin/phpcs -q",
+		"cs-fix": "@php ./vendor/bin/phpcbf -q",
+		"i18n": "@php wp i18n make-pot . ./languages/wpcom-legacy-redirector.pot",
+		"lint": "@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git",
+		"lint-ci": "@php ./vendor/php-parallel-lint/php-parallel-lint/parallel-lint . -e php --exclude vendor --exclude .git --checkstyle",
+		"test": ["@test:unit", "@test:integration"],
+		"test:behat": "behat --colors",
+		"test:behat-rerun": "behat --colors --rerun",
+		"test:unit": "@php ./vendor/bin/phpunit --testdox --no-coverage",
+		"test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
+		"test:integration-ms": "wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
 	},
 	"scripts-descriptions": {
-		"behat": "Run Behat tests via wp-env",
-		"behat-rerun": "Rerun failed Behat tests via wp-env",
-		"cs": "Run PHP CodeSniffer to check code style",
-		"cbf": "Run PHP CodeSniffer to fix code style issues",
+		"coverage": "Run tests with code coverage reporting",
+		"coverage-ci": "Run tests with code coverage reporting and send results to stdout",
+		"cs": "Run PHP Code Sniffer",
+		"cs-fix": "Run PHP Code Sniffer and fix violations",
 		"i18n": "Generate a POT file for translation",
-		"lint": "Run PHP parallel lint to check for syntax errors",
-		"test": "Run all tests for the WPCOM Legacy Redirector plugin.",
-		"test:unit": "Run unit tests.",
-		"test:integration": "Run integration tests via wp-env.",
-		"test:integration-ms": "Run integration tests in multisite mode via wp-env."
+		"lint": "Run PHP linting",
+		"lint-ci": "Run PHP linting and send results to stdout",
+		"test": "Run all tests",
+		"test:behat": "Run Behat WP-CLI tests",
+		"test:behat-rerun": "Rerun failed Behat tests",
+		"test:unit": "Run unit tests",
+		"test:integration": "Run integration tests",
+		"test:integration-ms": "Run integration tests in multisite mode"
 	}
 }
