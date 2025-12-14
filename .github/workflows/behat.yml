@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v4.4.0
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           cache: npm
@@ -48,8 +48,11 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
 
+      - name: Install wp-env globally
+        run: npm install -g @wordpress/env
+
       - name: Setup PHP 8.4
-        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # v2.34.0
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
         with:
           php-version: '8.4'
           coverage: none
@@ -58,11 +61,11 @@ jobs:
         uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.1.1
 
       - name: Start wp-env
-        run: npm run wp-env start
+        run: wp-env start
 
       - name: Run Behat tests
-        run: composer behat
+        run: composer test:behat
 
       - name: Rerun failed tests
         if: failure()
-        run: composer behat-rerun
+        run: composer test:behat-rerun
