@@ -34,9 +34,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php: '7.4'
+          - php: '8.2'
             allowed_failure: false
-          - php: '8.1'
+          - php: '8.3'
             allowed_failure: false
           - php: '8.4'
             allowed_failure: false
