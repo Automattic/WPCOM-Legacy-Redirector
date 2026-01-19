@@ -51,8 +51,6 @@ Feature: Inserting a redirect
       """
 
 
-  @broken
-  # See https://github.com/Automattic/WPCOM-Legacy-Redirector/issues/117.
   Scenario: Insert a redirect to a post ID
     Given I run `wp post create --post_title='Test post' --post_status="publish" --porcelain`
     And save STDOUT as {POST_ID}
