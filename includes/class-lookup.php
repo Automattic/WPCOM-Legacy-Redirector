@@ -136,6 +136,11 @@ final class Lookup {
 		// We need to decode the URL here to prevent $_SERVER issue from parsed data.
 		$url_info = Utils::mb_parse_url( urldecode( $url ) );
 
+		// Bail if the URL could not be parsed or has no path.
+		if ( ! is_array( $url_info ) || ! isset( $url_info['path'] ) ) {
+			return false;
+		}
+
 		$path_to_match = $url_info['path'];
 		if ( isset( $url_info['query'] ) ) {
 			$path_to_match .= '?' . $url_info['query'];

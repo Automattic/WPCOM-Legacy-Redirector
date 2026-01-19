@@ -57,4 +57,30 @@ final class LookupTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Test Lookup::get_redirect_data returns false for URLs without a path.
+	 *
+	 * @covers Lookup::get_redirect_data
+	 * @dataProvider get_urls_without_path_data
+	 *
+	 * @param string $url URL without a path component.
+	 */
+	public function test_get_redirect_data_returns_false_for_urls_without_path( $url ) {
+		$this->assertFalse( Lookup::get_redirect_data( $url ) );
+	}
+
+	/**
+	 * Data provider for URLs without a path component.
+	 *
+	 * @return array
+	 */
+	public function get_urls_without_path_data() {
+		return array(
+			'empty string'       => array( '' ),
+			'query string only'  => array( '?foo=bar' ),
+			'fragment only'      => array( '#section' ),
+			'malformed url'      => array( '://invalid' ),
+		);
+	}
+
 }
