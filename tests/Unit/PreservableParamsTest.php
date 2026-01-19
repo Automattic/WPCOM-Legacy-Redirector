@@ -107,7 +107,7 @@ final class PreservableParamsTest extends TestCase {
 	 * Test that preservable parameters from the querystring are preserved.
 	 *
 	 * @covers       \Automattic\LegacyRedirector\Lookup::get_preservable_querystring_params_from_url
-   * @uses.        \Automattic\LegacyRedirector\Utils::mb_parse_url
+	 * @uses.        \Automattic\LegacyRedirector\Utils::mb_parse_url
 	 * @dataProvider data_get_preservable_querystring_params_from_url
 	 * @param string $url                    The URL to parse.
 	 * @param array  $preservable_param_keys The keys that should be preserved.

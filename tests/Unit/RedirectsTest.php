@@ -1,4 +1,10 @@
 <?php
+/**
+ * Normalise URL unit tests.
+ *
+ * @package Automattic\LegacyRedirector
+ */
+
 namespace Automattic\LegacyRedirector\Tests\Unit;
 
 use Automattic\LegacyRedirector\Tests\Unit\MonkeyStubs;
@@ -31,7 +37,6 @@ final class NormaliseTest extends MonkeyStubs {
 		}
 
 		$this->assertSame( $expected_return, WPCOM_Legacy_Redirector::normalise_url( $url ) );
-
 	}
 
 	/**
@@ -41,21 +46,21 @@ final class NormaliseTest extends MonkeyStubs {
 	 */
 	public function get_protected_redirect_data_full_url_only() {
 		return array(
-			'redirect_simple_url_no_end_slash'           => array(
+			'redirect_simple_url_no_end_slash'            => array(
 				'https://www.example1.org',
 				'error',
 				'Exception',
 				'',
 				'',
 			),
-			'redirect_simple_url_with_end_slash'         => array(
+			'redirect_simple_url_with_end_slash'          => array(
 				'https://www.example1.org/',
 				'https',
 				'www.example1.org',
 				'/',
 				'',
 			),
-			'redirect_ascii_path_with_multiple_slashes' => array(
+			'redirect_ascii_path_with_multiple_slashes'   => array(
 				'https://www.example1.org///test///?test2=123&test=456',
 				'https',
 				'www.example1.org',
@@ -69,7 +74,7 @@ final class NormaliseTest extends MonkeyStubs {
 				'///test///',
 				'فوتوغرافيا/?test=فوتوغرافيا',
 			),
-			'redirect_unicode_path_with_multiple_slashes'  => array(
+			'redirect_unicode_path_with_multiple_slashes' => array(
 				'https://www.example1.org//فوتوغرافيا/?test=فوتوغرافيا',
 				'https',
 				'www.example1.org',

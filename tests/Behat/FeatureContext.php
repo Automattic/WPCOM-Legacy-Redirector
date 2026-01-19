@@ -85,6 +85,7 @@ final class FeatureContext implements Context {
 			$escaped_command
 		);
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- Required for wp-env CLI testing.
 		exec( $exec_command, $output_lines, $exit_code );
 
 		// Filter out wp-env status messages.
@@ -95,14 +96,14 @@ final class FeatureContext implements Context {
 				return ! ( 0 === strpos( $line, 'ℹ ' ) ||
 						0 === strpos( $line, '✔ ' ) ||
 						0 === strpos( $line, '✖ ' ) ||
-						'' === trim( $line ) && count( $output_lines ) > 1 );
+						( '' === trim( $line ) && count( $output_lines ) > 1 ) );
 			}
 		);
 
-		$output              = implode( "\n", $filtered_lines );
-		$this->output        = $output;
-		$this->error_output  = '';
-		$this->exit_code     = $exit_code;
+		$output             = implode( "\n", $filtered_lines );
+		$this->output       = $output;
+		$this->error_output = '';
+		$this->exit_code    = $exit_code;
 
 		// Parse STDERR from combined output.
 		// WP-CLI prefixes errors with "Error:" typically.
@@ -213,6 +214,7 @@ add_filter( 'pre_http_request', function( $preempt, $args, $url ) {
 PHP;
 
 		// Use base64 encoding to avoid shell escaping issues.
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding for shell safety, not obfuscation.
 		$encoded = base64_encode( $bypass_validation );
 
 		// Ensure mu-plugins directory exists, then create the bypass file.
@@ -260,6 +262,7 @@ PHP;
 	 * Set up a WP installation with WPCOM Legacy Redirector plugin activated.
 	 *
 	 * @Given a WP install(ation) with the WPCOM Legacy Redirector plugin
+	 * @throws RuntimeException If plugin activation fails.
 	 * @return void
 	 */
 	public function given_a_wp_installation_with_the_wpcomlr_plugin(): void {
@@ -284,9 +287,11 @@ PHP;
 		}
 
 		if ( 0 !== $this->exit_code ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				'Failed to activate WPCOM Legacy Redirector plugin: ' . $this->output . ' ' . $this->error_output
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -294,6 +299,7 @@ PHP;
 	 * Create a published post with a specific slug.
 	 *
 	 * @Given there is a published post with a slug of :post_name
+	 * @throws RuntimeException If post creation fails.
 	 * @param string $post_name Post slug to use.
 	 * @return void
 	 */
@@ -306,9 +312,11 @@ PHP;
 		$this->run_wp_cli_command( $command, false );
 
 		if ( 0 !== $this->exit_code ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				'Failed to create post: ' . $this->output
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -316,6 +324,7 @@ PHP;
 	 * Add host to allowed_redirect_hosts.
 	 *
 	 * @Given :host is allowed to be redirected
+	 * @throws RuntimeException If filter setup fails.
 	 * @param string $host Host name to add.
 	 * @return void
 	 */
@@ -326,6 +335,7 @@ PHP;
 		);
 
 		// Use base64 encoding to avoid shell escaping issues.
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding for shell safety, not obfuscation.
 		$encoded = base64_encode( $filter_code );
 
 		// Create mu-plugin to add the filter.
@@ -337,9 +347,11 @@ PHP;
 		$this->run_wp_cli_command( $command, false );
 
 		if ( 0 !== $this->exit_code ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				'Failed to add host to allowed_redirect_hosts: ' . $this->output
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		$this->added_hosts[] = $host;
@@ -391,6 +403,7 @@ PHP;
 	 * Run the previous command again.
 	 *
 	 * @When /^I (run|try) the previous command again$/
+	 * @throws RuntimeException If no previous command exists.
 	 * @param string $action Either 'run' or 'try'.
 	 * @return void
 	 */
@@ -421,6 +434,7 @@ PHP;
 	 * Assert that STDOUT exactly matches expected output.
 	 *
 	 * @Then STDOUT should be:
+	 * @throws RuntimeException If STDOUT does not match.
 	 * @param PyStringNode $expected Expected output.
 	 * @return void
 	 */
@@ -429,6 +443,7 @@ PHP;
 		$expected_text = $this->replace_variables( trim( $expected->getRaw() ) );
 
 		if ( $actual !== $expected_text ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				sprintf(
 					"STDOUT does not match.\nExpected:\n%s\n\nActual:\n%s",
@@ -436,6 +451,7 @@ PHP;
 					$actual
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -443,6 +459,7 @@ PHP;
 	 * Assert that STDOUT contains expected text.
 	 *
 	 * @Then STDOUT should contain:
+	 * @throws RuntimeException If STDOUT does not contain expected text.
 	 * @param PyStringNode $expected Expected text to find.
 	 * @return void
 	 */
@@ -451,6 +468,7 @@ PHP;
 		$expected_text = $this->replace_variables( trim( $expected->getRaw() ) );
 
 		if ( false === strpos( $actual, $expected_text ) ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				sprintf(
 					"STDOUT does not contain expected text.\nExpected to find:\n%s\n\nActual output:\n%s",
@@ -458,6 +476,7 @@ PHP;
 					$actual
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -465,6 +484,7 @@ PHP;
 	 * Assert that STDERR exactly matches expected output.
 	 *
 	 * @Then STDERR should be:
+	 * @throws RuntimeException If STDERR does not match.
 	 * @param PyStringNode $expected Expected error output.
 	 * @return void
 	 */
@@ -473,6 +493,7 @@ PHP;
 		$expected_text = $this->replace_variables( trim( $expected->getRaw() ) );
 
 		if ( $actual !== $expected_text ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				sprintf(
 					"STDERR does not match.\nExpected:\n%s\n\nActual:\n%s",
@@ -480,6 +501,7 @@ PHP;
 					$actual
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -487,6 +509,7 @@ PHP;
 	 * Assert that STDERR contains expected text.
 	 *
 	 * @Then STDERR should contain:
+	 * @throws RuntimeException If STDERR does not contain expected text.
 	 * @param PyStringNode $expected Expected text to find in STDERR.
 	 * @return void
 	 */
@@ -495,6 +518,7 @@ PHP;
 		$expected_text = $this->replace_variables( trim( $expected->getRaw() ) );
 
 		if ( false === strpos( $actual, $expected_text ) ) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test context, output not rendered.
 			throw new RuntimeException(
 				sprintf(
 					"STDERR does not contain expected text.\nExpected to find:\n%s\n\nActual error output:\n%s",
@@ -502,6 +526,7 @@ PHP;
 					$actual
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 

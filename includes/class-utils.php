@@ -1,7 +1,15 @@
 <?php
+/**
+ * Utils class.
+ *
+ * @package Automattic\LegacyRedirector
+ */
 
 namespace Automattic\LegacyRedirector;
 
+/**
+ * Utility functions for URL parsing and manipulation.
+ */
 final class Utils {
 
 	/**
@@ -30,6 +38,7 @@ final class Utils {
 		$encoded_url = preg_replace_callback(
 			'|[^!*\'();:@&=+$,\/?%#\[\]]+|usD',
 			function ( $matches ) {
+				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.urlencode_urlencode -- Required for proper percent-encoding of UTF-8 chars.
 				return urlencode( $matches[0] );
 			},
 			$url
@@ -42,7 +51,7 @@ final class Utils {
 		}
 
 		if ( false === $parts ) {
-			throw new \InvalidArgumentException( 'Malformed URL: ' . $url );
+			throw new \InvalidArgumentException( 'Malformed URL: ' . $url ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not rendered output.
 		}
 
 		if ( is_array( $parts ) ) {
@@ -65,7 +74,7 @@ final class Utils {
 		$home_url_info = self::mb_parse_url( home_url() );
 		$return_url    = $home_url_info['scheme'] . '://' . $home_url_info['host'];
 
-		if ( !empty( $home_url_info['port'] ) ) {
+		if ( ! empty( $home_url_info['port'] ) ) {
 			$return_url .= ':' . $home_url_info['port'];
 		}
 

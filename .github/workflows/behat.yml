@@ -3,7 +3,7 @@ name: Behat Tests
 on:
   push:
     paths:
-      - '.github/workflows/behat-test.yml'
+      - '.github/workflows/behat.yml'
       - '**.php'
       - '**.feature'
       - 'behat.yml'
@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [develop, main]
     paths:
-      - '.github/workflows/behat-test.yml'
+      - '.github/workflows/behat.yml'
       - '**.php'
       - '**.feature'
       - 'behat.yml'
