@@ -5,11 +5,11 @@
  * @package Automattic\LegacyRedirector
  */
 
-use \Automattic\LegacyRedirector\Capability;
-use \Automattic\LegacyRedirector\List_Redirects;
-use \Automattic\LegacyRedirector\Lookup;
-use \Automattic\LegacyRedirector\Post_Type;
-use \Automattic\LegacyRedirector\Utils;
+use Automattic\LegacyRedirector\Capability;
+use Automattic\LegacyRedirector\List_Redirects;
+use Automattic\LegacyRedirector\Lookup;
+use Automattic\LegacyRedirector\Post_Type;
+use Automattic\LegacyRedirector\Utils;
 
 /**
  * Plugin core functionality for creating, validating, and performing redirect rules.
@@ -248,7 +248,7 @@ class WPCOM_Legacy_Redirector {
 			return new \WP_Error( $code, $message );
 		}
 
-		throw new \Exception( $message );
+		throw new \Exception( $message ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not rendered output.
 	}
 
 	/**

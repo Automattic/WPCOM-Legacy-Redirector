@@ -1,4 +1,9 @@
 <?php
+/**
+ * Lookup class integration tests.
+ *
+ * @package Automattic\LegacyRedirector
+ */
 
 namespace Automattic\LegacyRedirector\Tests\Integration;
 
@@ -30,7 +35,6 @@ final class LookupTest extends TestCase {
 
 		$this->assertEquals( $to_url, $redirect_data['redirect_uri'] );
 		$this->assertEquals( $redirect_status, $redirect_data['redirect_status'] );
-
 	}
 
 	/**
@@ -77,10 +81,10 @@ final class LookupTest extends TestCase {
 	 */
 	public function get_urls_without_path_data() {
 		return array(
-			'empty string'       => array( '' ),
-			'query string only'  => array( '?foo=bar' ),
-			'fragment only'      => array( '#section' ),
-			'malformed url'      => array( '://invalid' ),
+			'empty string'      => array( '' ),
+			'query string only' => array( '?foo=bar' ),
+			'fragment only'     => array( '#section' ),
+			'malformed url'     => array( '://invalid' ),
 		);
 	}
 
@@ -143,5 +147,4 @@ final class LookupTest extends TestCase {
 		$redirect_data = Lookup::get_redirect_data( $from_url );
 		$this->assertFalse( $redirect_data );
 	}
-
 }

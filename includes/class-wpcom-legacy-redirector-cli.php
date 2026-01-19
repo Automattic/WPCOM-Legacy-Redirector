@@ -69,7 +69,8 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 			// Pause.
 			sleep( 1 );
 			++$paged;
-		} while ( count( $redirect_urls ) );
+			$redirect_urls_count = count( $redirect_urls );
+		} while ( $redirect_urls_count );
 
 		$progress->finish();
 
@@ -238,8 +239,10 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 				if ( false === $dry_run ) {
 					// Set `redirect_to` flag to have the validate URL perform the correct checks.
 					$is_unset = false;
+					// phpcs:ignore WordPress.Security.NonceVerification.Missing -- CLI command, no nonce context.
 					if ( ! isset( $_POST['redirect_to'] ) ) {
-						$is_unset             = true;
+						$is_unset = true;
+						// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Setting flag for internal validation.
 						$_POST['redirect_to'] = true;
 					}
 
@@ -347,9 +350,11 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 		ini_set( 'auto_detect_line_endings', true );
 
 		global $wpdb;
-		$row    = 0;
+		$row = 0;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- CLI command, WP_Filesystem not appropriate.
 		$handle = fopen( $csv, 'r' );
 		if ( false !== $handle ) {
+			// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- Standard CSV reading pattern.
 			while ( ( $data = fgetcsv( $handle, 2000, ',' ) ) !== false ) {
 				++$row;
 				$redirect_from = $data[0];
@@ -384,6 +389,7 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 					sleep( 1 );
 				}
 			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CLI command, WP_Filesystem not appropriate.
 			fclose( $handle );
 
 			if ( count( $notices ) > 0 ) {
@@ -433,6 +439,7 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 			WP_CLI::warning( 'Overwriting file ' . $filename );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- CLI command, WP_Filesystem not appropriate.
 		$file_descriptor = fopen( $filename, 'wb' );
 
 		if ( ! $file_descriptor ) {
@@ -468,10 +475,12 @@ class WPCOM_Legacy_Redirector_CLI extends WP_CLI_Command {
 			}
 
 			++$paged;
-		} while ( count( $posts ) );
+			$posts_count = count( $posts );
+		} while ( $posts_count );
 
 		$progress->finish();
 		WP_CLI\Utils\write_csv( $file_descriptor, $output );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CLI command, WP_Filesystem not appropriate.
 		fclose( $file_descriptor );
 	}
 }

@@ -49,7 +49,9 @@ class WPCOM_Legacy_Redirector_UI {
 	 */
 	public function validate_redirects_notices() {
 		$redirect_not_valid_text = __( 'Redirect is not valid', 'wpcom-legacy-redirector' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display after redirect.
 		if ( isset( $_GET['validate'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display after redirect.
 			switch ( $_GET['validate'] ) {
 				case 'invalid':
 					echo '<div id="message" class="error notice is-dismissible"><p>' . esc_html( $redirect_not_valid_text ) . '<br />' . esc_html__( 'If you are doing an external redirect, make sure you safelist the domain using the "allowed_redirect_hosts" filter.', 'wpcom-legacy-redirector' ) . '</p></div>';
@@ -104,9 +106,11 @@ class WPCOM_Legacy_Redirector_UI {
 	 * Validate the Redirect To URL.
 	 */
 	public function validate_vip_legacy_redirect() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce is verified below.
 		if ( isset( $_GET['action'] ) && 'validate' === $_GET['action'] ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce is verified below.
 			$post = get_post( $_GET['post'] );
-			if ( ! isset( $_REQUEST['_validate_redirect'] ) || ! wp_verify_nonce( $_REQUEST['_validate_redirect'], 'validate_vip_legacy_redirect' ) ) {
+			if ( ! isset( $_REQUEST['_validate_redirect'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_validate_redirect'] ) ), 'validate_vip_legacy_redirect' ) ) {
 				return;
 			} else {
 				$redirect = WPCOM_Legacy_Redirector::get_redirect( $post );
@@ -157,19 +161,19 @@ class WPCOM_Legacy_Redirector_UI {
 				$redirect_from = sanitize_text_field( $_POST['redirect_from'] );
 
 				// We apply the home_url() prefix to $redirect_from.
-				$redirect_url_info = Utils::mb_parse_url( home_url() . $redirect_from);
-				$redirect_from = $redirect_url_info['path'];
-				if( !empty( $redirect_url_info['query'] ) ) {
+				$redirect_url_info = Utils::mb_parse_url( home_url() . $redirect_from );
+				$redirect_from     = $redirect_url_info['path'];
+				if ( ! empty( $redirect_url_info['query'] ) ) {
 					$redirect_from .= '?' . $redirect_url_info['query'];
 				}
 
-				$redirect_to   = sanitize_text_field( $_POST['redirect_to'] );
+				$redirect_to = sanitize_text_field( $_POST['redirect_to'] );
 				if ( WPCOM_Legacy_Redirector::validate( $redirect_from, $redirect_to ) ) {
 					$output = WPCOM_Legacy_Redirector::insert_legacy_redirect( $redirect_from, $redirect_to, true );
 					if ( true === $output ) {
 						$follow_home_domain = Utils::get_home_domain_without_path();
-						$link       = '<a href="' . esc_url( $follow_home_domain . $redirect_from ) . '" target="_blank">' . esc_html( $redirect_from ) . '</a>';
-						$messages[] = __( 'The redirect was added successfully. Check Redirect: ', 'wpcom-legacy-redirector' ) . $link;
+						$link               = '<a href="' . esc_url( $follow_home_domain . $redirect_from ) . '" target="_blank">' . esc_html( $redirect_from ) . '</a>';
+						$messages[]         = __( 'The redirect was added successfully. Check Redirect: ', 'wpcom-legacy-redirector' ) . $link;
 					} elseif ( is_wp_error( $output ) ) {
 						foreach ( $output->get_error_messages() as $error ) {
 							$errors[] = array(
@@ -197,8 +201,10 @@ class WPCOM_Legacy_Redirector_UI {
 		$errors   = $array[0];
 		$messages = $array[1];
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in add_redirect_validation().
 		$redirect_from_value = isset( $_POST['redirect_from'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_from'] ) ) : '/';
-		$redirect_to_value   = isset( $_POST['redirect_to'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) : '/';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in add_redirect_validation().
+		$redirect_to_value = isset( $_POST['redirect_to'], $errors[0] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) : '/';
 		?>
 		<style>
 		#redirect_from_preview:not(:empty),

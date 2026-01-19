@@ -1,4 +1,10 @@
 <?php
+/**
+ * Utils class unit tests.
+ *
+ * @package Automattic\LegacyRedirector
+ */
+
 namespace Automattic\LegacyRedirector\Tests\Unit;
 
 use Automattic\LegacyRedirector\Utils;
@@ -25,7 +31,6 @@ final class UtilsTest extends MonkeyStubs {
 	public function test_mb_parse_url( $url, $expected_schema, $expected_domain, $expected_path, $expected_query ) {
 
 		$this->do_assertion_mb_parse_url( $url, $expected_schema, $expected_domain, $expected_path, $expected_query );
-
 	}
 
 	/**

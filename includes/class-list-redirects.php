@@ -89,6 +89,7 @@ final class List_Redirects {
 		if ( Post_Type::POST_TYPE === $post->post_type ) {
 			$url = admin_url( 'post.php?post=vip-legacy-redirect&post=' . $post->ID );
 
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for admin list display.
 			if ( isset( $_GET['post_status'] ) && 'trash' === $_GET['post_status'] ) {
 				return $actions;
 			}
@@ -120,9 +121,9 @@ final class List_Redirects {
 							esc_url( $validate_link ),
 							esc_html__( 'Validate', 'wpcom-legacy-redirector' )
 						),
-						'follow' => sprintf(
+						'follow'   => sprintf(
 							'<a href="%1$s" target="_blank">%2$s</a>',
-							esc_url( $follow_home_domain .  $post->post_title ),
+							esc_url( $follow_home_domain . $post->post_title ),
 							esc_html__( 'Follow', 'wpcom-legacy-redirector' )
 						),
 					)

@@ -26,7 +26,7 @@ final class RedirectsTest extends TestCase {
 	 */
 	public function get_redirect_data() {
 		return array(
-			'redirect_relative_path'  => array(
+			'redirect_relative_path'    => array(
 				'/non-existing-page',
 				'/test2',
 				home_url() . '/test2',
@@ -38,7 +38,7 @@ final class RedirectsTest extends TestCase {
 				'http://example.com',
 			),
 
-			'redirect Arabic in path'  => array(
+			'redirect Arabic in path'   => array(
 				// https://www.w3.org/International/articles/idn-and-iri/ .
 				'/فوتوغرافيا/?test=فوتوغرافيا',
 				'http://example.com',
@@ -67,8 +67,9 @@ final class RedirectsTest extends TestCase {
 	 *
 	 * @dataProvider get_redirect_data
 	 * @covers       WPCOM_Legacy_Redirector::insert_legacy_redirect
-	 * @param string $from From path.
-	 * @param string $to   Destination.
+	 * @param string      $from     From path.
+	 * @param string      $to       Destination.
+	 * @param string|null $expected Expected redirect URL.
 	 */
 	public function test_redirect_is_inserted_successfully_and_returns_true( $from, $to, $expected = null ) {
 		$redirect = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from, $to, false );
