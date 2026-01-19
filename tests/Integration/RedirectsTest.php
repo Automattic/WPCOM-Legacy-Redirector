@@ -161,4 +161,61 @@ final class RedirectsTest extends TestCase {
 		$redirect = Lookup::get_redirect_uri( $protected_from );
 		$this->assertEquals( $redirect, $protected_to, 'get_redirect_uri failed' );
 	}
+
+	/**
+	 * Test redirect to a post ID works correctly (covers CLI use case).
+	 *
+	 * @covers WPCOM_Legacy_Redirector::insert_legacy_redirect
+	 * @covers WPCOM_Legacy_Redirector::validate_destination_post_id
+	 */
+	public function test_redirect_to_post_id_with_validation() {
+		// Create a published post to redirect to.
+		$destination_post_id = self::factory()->post->create(
+			array(
+				'post_status' => 'publish',
+				'post_title'  => 'Destination Post',
+			)
+		);
+
+		// Insert redirect to post ID (simulates CLI: wp wpcom-legacy-redirector insert-redirect /foo 123).
+		$result = WPCOM_Legacy_Redirector::insert_legacy_redirect( '/redirect-to-post-id', $destination_post_id, true );
+		$this->assertTrue( $result, 'insert_legacy_redirect() to post ID should succeed' );
+
+		// Verify the redirect works.
+		$redirect_uri = Lookup::get_redirect_uri( '/redirect-to-post-id' );
+		$this->assertEquals( get_permalink( $destination_post_id ), $redirect_uri );
+	}
+
+	/**
+	 * Test redirect to non-existent post ID fails validation.
+	 *
+	 * @covers WPCOM_Legacy_Redirector::insert_legacy_redirect
+	 * @covers WPCOM_Legacy_Redirector::validate_destination_post_id
+	 */
+	public function test_redirect_to_nonexistent_post_id_fails() {
+		// Use a very high post ID that doesn't exist.
+		$result = WPCOM_Legacy_Redirector::insert_legacy_redirect( '/redirect-to-nonexistent', 999999999, true );
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertEquals( 'empty-postid', $result->get_error_code() );
+	}
+
+	/**
+	 * Test redirect to draft post ID fails validation.
+	 *
+	 * @covers WPCOM_Legacy_Redirector::insert_legacy_redirect
+	 * @covers WPCOM_Legacy_Redirector::validate_destination_post_id
+	 */
+	public function test_redirect_to_draft_post_id_fails() {
+		// Create a draft post.
+		$draft_post_id = self::factory()->post->create(
+			array(
+				'post_status' => 'draft',
+				'post_title'  => 'Draft Post',
+			)
+		);
+
+		$result = WPCOM_Legacy_Redirector::insert_legacy_redirect( '/redirect-to-draft', $draft_post_id, true );
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertEquals( 'empty-postid', $result->get_error_code() );
+	}
 }

@@ -179,7 +179,7 @@ class WPCOM_Legacy_Redirector {
 			return new WP_Error( 'duplicate-redirect-uri', 'A redirect for this URI already exists' );
 		}
 		if ( is_numeric( $redirect_to ) || false !== strpos( $redirect_to, 'http' ) ) {
-			if ( is_numeric( $redirect_to ) && true !== self::vip_legacy_redirect_parent_id( $redirect_to ) ) {
+			if ( is_numeric( $redirect_to ) && true !== self::validate_destination_post_id( $redirect_to ) ) {
 				$message = __( 'Redirect is pointing to a Post ID that does not exist.', 'wpcom-legacy-redirector' );
 				return new WP_Error( 'empty-postid', $message );
 			}
@@ -413,29 +413,57 @@ class WPCOM_Legacy_Redirector {
 	}
 
 	/**
-	 * Run checks for the Post Parent ID of the redirect.
+	 * Validate a destination post ID exists and is published.
 	 *
-	 * @param object $post The Post.
-	 * @return bool|string True on success, false if parent not found, 'private' if not published.
+	 * @param int $post_id The destination post ID to validate.
+	 * @return bool True if post exists and is published, false otherwise.
+	 */
+	public static function validate_destination_post_id( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof \WP_Post ) {
+			return false;
+		}
+
+		// Check if redirecting to home URL (post_excerpt check for existing redirects).
+		if ( true === self::check_if_excerpt_is_home( $post_id ) ) {
+			return false;
+		}
+
+		return 'publish' === $post->post_status;
+	}
+
+	/**
+	 * Get the status of a redirect post's parent (destination).
+	 *
+	 * Used for display purposes in the admin list table.
+	 *
+	 * @param \WP_Post|int $post The redirect post object or ID.
+	 * @return string|false Parent post slug if valid and published, 'private' if not published, false if not found.
 	 */
 	public static function vip_legacy_redirect_parent_id( $post ) {
-		if ( isset( $_POST['redirect_to'] ) && true !== self::check_if_excerpt_is_home( $post ) ) {
-			if ( null !== get_post( $post ) && 'publish' === get_post_status( $post ) ) {
-				return true;
-			}
-		} else {
-			if ( is_int( $post ) ) {
-				$post = get_post( $post );
-			}
-			$parent = get_post( $post->post_parent );
-			if ( null === get_post( $post->post_parent ) ) {
-				return false;
-			} elseif ( 'publish' !== get_post_status( $parent ) ) {
-				return 'private';
-			} else {
-				$parent_slug = $parent->post_name;
-				return $parent_slug;
-			}
+		if ( is_int( $post ) ) {
+			$post = get_post( $post );
 		}
+
+		if ( ! $post instanceof \WP_Post ) {
+			return false;
+		}
+
+		// If this is not a redirect post type, treat it as a destination validation.
+		if ( Post_Type::POST_TYPE !== $post->post_type ) {
+			return self::validate_destination_post_id( $post->ID ) ? true : false;
+		}
+
+		// For redirect posts, check the parent (destination).
+		$parent = get_post( $post->post_parent );
+		if ( ! $parent instanceof \WP_Post ) {
+			return false;
+		}
+
+		if ( 'publish' !== $parent->post_status ) {
+			return 'private';
+		}
+
+		return $parent->post_name;
 	}
 }
