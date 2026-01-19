@@ -143,9 +143,10 @@ class WPCOM_Legacy_Redirector {
 		}
 
 		$args = array(
-			'post_name'  => $from_url_hash,
-			'post_title' => $from_url,
-			'post_type'  => Post_Type::POST_TYPE,
+			'post_name'   => $from_url_hash,
+			'post_title'  => $from_url,
+			'post_type'   => Post_Type::POST_TYPE,
+			'post_status' => 'publish',
 		);
 
 		if ( is_numeric( $redirect_to ) ) {

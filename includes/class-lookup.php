@@ -47,7 +47,14 @@ final class Lookup {
 				wp_cache_set( $url_hash, 0, self::CACHE_GROUP );
 
 				return false;
-			} elseif ( 0 !== $redirect_post->post_parent ) {
+			}
+
+			// Only process published redirects (allows trashing to pause redirects).
+			if ( 'publish' !== $redirect_post->post_status ) {
+				return false;
+			}
+
+			if ( 0 !== $redirect_post->post_parent ) {
 				// Add preserved params to the destination URL.
 				return add_query_arg( $preservable_params, get_permalink( $redirect_post->post_parent ) );
 			} elseif ( ! empty( $redirect_post->post_excerpt ) ) {
