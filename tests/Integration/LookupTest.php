@@ -3,10 +3,11 @@
 namespace Automattic\LegacyRedirector\Tests\Integration;
 
 use Automattic\LegacyRedirector\Lookup;
+use Automattic\LegacyRedirector\Post_Type;
 use WPCOM_Legacy_Redirector;
 
 /**
- * CapabilityTest class.
+ * LookupTest class.
  */
 final class LookupTest extends TestCase {
 
@@ -81,6 +82,66 @@ final class LookupTest extends TestCase {
 			'fragment only'      => array( '#section' ),
 			'malformed url'      => array( '://invalid' ),
 		);
+	}
+
+	/**
+	 * Test that trashed redirects do not redirect.
+	 *
+	 * @covers Lookup::get_redirect_uri
+	 */
+	public function test_trashed_redirect_does_not_redirect() {
+		$from_url = '/trashed-redirect-test';
+		$to_url   = 'http://example.com/destination';
+
+		// Insert a redirect.
+		$post_id = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from_url, $to_url, false, true );
+		$this->assertIsInt( $post_id );
+
+		// Verify the redirect works initially.
+		$redirect_data = Lookup::get_redirect_data( $from_url );
+		$this->assertIsArray( $redirect_data );
+		$this->assertEquals( $to_url, $redirect_data['redirect_uri'] );
+
+		// Trash the redirect.
+		wp_trash_post( $post_id );
+
+		// Clear the cache to ensure we're testing the post_status check.
+		$url_hash = WPCOM_Legacy_Redirector::get_url_hash( $from_url );
+		wp_cache_delete( $url_hash, Lookup::CACHE_GROUP );
+
+		// Verify the redirect no longer works.
+		$redirect_data = Lookup::get_redirect_data( $from_url );
+		$this->assertFalse( $redirect_data );
+	}
+
+	/**
+	 * Test that draft redirects do not redirect.
+	 *
+	 * @covers Lookup::get_redirect_uri
+	 */
+	public function test_draft_redirect_does_not_redirect() {
+		$from_url = '/draft-redirect-test';
+		$to_url   = 'http://example.com/destination';
+
+		// Insert a redirect.
+		$post_id = WPCOM_Legacy_Redirector::insert_legacy_redirect( $from_url, $to_url, false, true );
+		$this->assertIsInt( $post_id );
+
+		// Change status to draft.
+		wp_update_post(
+			array(
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			)
+		);
+
+		// Clear the cache.
+		$url_hash = WPCOM_Legacy_Redirector::get_url_hash( $from_url );
+		wp_cache_delete( $url_hash, Lookup::CACHE_GROUP );
+
+		// Verify the redirect does not work.
+		$redirect_data = Lookup::get_redirect_data( $from_url );
+		$this->assertFalse( $redirect_data );
 	}
 
 }
