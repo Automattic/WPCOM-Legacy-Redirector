@@ -6,14 +6,14 @@ on:
       - '**.php'
       - 'composer.json'
       - 'phpunit.xml.dist'
-      - '.github/workflows/unit-tests.yml'
+      - '.github/workflows/unit.yml'
   pull_request:
     branches: [develop, main]
     paths:
       - '**.php'
       - 'composer.json'
       - 'phpunit.xml.dist'
-      - '.github/workflows/unit-tests.yml'
+      - '.github/workflows/unit.yml'
   workflow_dispatch:
 
 concurrency:
