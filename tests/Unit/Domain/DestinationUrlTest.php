@@ -292,4 +292,63 @@ final class DestinationUrlTest extends MonkeyStubs {
 
 		DestinationUrl::from_string( '//example.com/page' );
 	}
+
+	// =========================================================================
+	// Edge Cases: Query Parameter Handling
+	// =========================================================================
+
+	/**
+	 * Test with_query_params handles multiple params.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\DestinationUrl::with_query_params
+	 */
+	public function test_with_query_params_multiple(): void {
+		$destination = DestinationUrl::from_string( '/page' );
+		$result      = $destination->with_query_params(
+			array(
+				'utm_source'   => 'test',
+				'utm_medium'   => 'email',
+				'utm_campaign' => 'launch',
+			)
+		);
+
+		$this->assertStringContainsString( 'utm_source=test', $result->value() );
+		$this->assertStringContainsString( 'utm_medium=email', $result->value() );
+		$this->assertStringContainsString( 'utm_campaign=launch', $result->value() );
+	}
+
+	/**
+	 * Test with_query_params handles special characters in values.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\DestinationUrl::with_query_params
+	 */
+	public function test_with_query_params_special_chars(): void {
+		$destination = DestinationUrl::from_string( '/page' );
+		$result      = $destination->with_query_params( array( 'redirect' => 'https://example.com/path' ) );
+
+		// Value should be URL-encoded.
+		$this->assertStringContainsString( 'redirect=', $result->value() );
+	}
+
+	/**
+	 * Test absolute URL with query params preserved through resolve.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\DestinationUrl::resolve
+	 */
+	public function test_resolve_preserves_query_on_absolute_url(): void {
+		$destination = DestinationUrl::from_string( 'https://external.com/page?existing=value' );
+
+		$this->assertSame( 'https://external.com/page?existing=value', $destination->resolve( 'https://example.com' ) );
+	}
+
+	/**
+	 * Test relative path with query params resolved correctly.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\DestinationUrl::resolve
+	 */
+	public function test_resolve_preserves_query_on_relative_path(): void {
+		$destination = DestinationUrl::from_string( '/page?foo=bar' );
+
+		$this->assertSame( 'https://example.com/page?foo=bar', $destination->resolve( 'https://example.com' ) );
+	}
 }

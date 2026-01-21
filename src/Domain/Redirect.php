@@ -254,4 +254,23 @@ final class Redirect {
 			$this->created_at
 		);
 	}
+
+	/**
+	 * Create a copy with a new source URL.
+	 *
+	 * Note: Changing the source URL is an unusual operation, typically done
+	 * only from admin edit screens. This invalidates the old cache entry.
+	 *
+	 * @param SourceUrl $source The new source URL.
+	 * @return self
+	 */
+	public function with_source( SourceUrl $source ): self {
+		return new self(
+			$this->id,
+			$source,
+			$this->destination,
+			$this->status,
+			$this->created_at
+		);
+	}
 }

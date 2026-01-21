@@ -7,13 +7,13 @@
 
 namespace Automattic\LegacyRedirector\Tests\Integration;
 
-use Automattic\LegacyRedirector\Capability;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Capability;
 use WP_User;
 
 /**
  * CapabilityTest class.
  *
- * @covers \Automattic\LegacyRedirector\Capability
+ * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Capability
  */
 final class CapabilityTest extends TestCase {
 

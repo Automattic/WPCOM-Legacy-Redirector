@@ -22,20 +22,59 @@
  * @package Automattic\LegacyRedirector
  */
 
+define( 'WPCOM_LEGACY_REDIRECTOR_FILE', __FILE__ );
 define( 'WPCOM_LEGACY_REDIRECTOR_VERSION', '1.4.0-alpha' );
-define( 'WPCOM_LEGACY_REDIRECTOR_PLUGIN_NAME', 'WPCOM Legacy Redirector' );
 
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	require __DIR__ . '/includes/class-wpcom-legacy-redirector-cli.php';
-	WP_CLI::add_command( 'wpcom-legacy-redirector', 'WPCOM_Legacy_Redirector_CLI' );
+// Load Composer autoloader for PSR-4 classes (src/).
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
 }
 
-require __DIR__ . '/includes/class-capability.php';
-require __DIR__ . '/includes/class-post-type.php';
-require __DIR__ . '/includes/class-list-redirects.php';
-require __DIR__ . '/includes/class-lookup.php';
-require __DIR__ . '/includes/class-utils.php';
-require __DIR__ . '/includes/class-wpcom-legacy-redirector-ui.php';
-require __DIR__ . '/includes/class-wpcom-legacy-redirector.php';
+// Initialize the plugin via the bootstrapper.
+$container    = \Automattic\LegacyRedirector\Infrastructure\DI\Container::instance();
+$bootstrapper = new \Automattic\LegacyRedirector\Infrastructure\WordPress\PluginBootstrapper( $container );
+$bootstrapper->init();
 
-WPCOM_Legacy_Redirector::start();
+// Register WP-CLI commands.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	// Register parent command for help text.
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector',
+		\Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\RedirectorCommand::class
+	);
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector find-domains',
+		new \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\FindDomainsCommand()
+	);
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector insert-redirect',
+		new \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\InsertRedirectCommand( $container->manager() )
+	);
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector import-from-meta',
+		new \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromMetaCommand(
+			$container->manager(),
+			$container->inner_repository()
+		)
+	);
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector import-from-csv',
+		new \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromCsvCommand( $container->manager() )
+	);
+	WP_CLI::add_command(
+		'wpcom-legacy-redirector export-to-csv',
+		new \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ExportToCsvCommand()
+	);
+}
+
+/**
+ * Get the plugin's DI container instance.
+ *
+ * This function is provided for third-party developers who need to access
+ * plugin services. Internal plugin code should use Container::instance() directly.
+ *
+ * @return \Automattic\LegacyRedirector\Infrastructure\DI\Container The container.
+ */
+function wpcom_legacy_redirector_container(): \Automattic\LegacyRedirector\Infrastructure\DI\Container {
+	return \Automattic\LegacyRedirector\Infrastructure\DI\Container::instance();
+}

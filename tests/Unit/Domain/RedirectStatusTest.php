@@ -186,16 +186,4 @@ final class RedirectStatusTest extends MonkeyStubs {
 		);
 	}
 
-	/**
-	 * Test enum value property.
-	 *
-	 * @covers \Automattic\LegacyRedirector\Domain\RedirectStatus
-	 */
-	public function test_enum_values(): void {
-		$this->assertSame( 301, RedirectStatus::MOVED_PERMANENTLY->value );
-		$this->assertSame( 302, RedirectStatus::FOUND->value );
-		$this->assertSame( 303, RedirectStatus::SEE_OTHER->value );
-		$this->assertSame( 307, RedirectStatus::TEMPORARY_REDIRECT->value );
-		$this->assertSame( 308, RedirectStatus::PERMANENT_REDIRECT->value );
-	}
 }

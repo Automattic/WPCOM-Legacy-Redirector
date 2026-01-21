@@ -235,4 +235,107 @@ final class SourceUrlTest extends MonkeyStubs {
 
 		$this->assertSame( '/فوتوغرافيا/?test=فوتوغرافيا', $source->path() );
 	}
+
+	// =========================================================================
+	// Edge Cases: Query Parameter Handling
+	// =========================================================================
+
+	/**
+	 * Test without_query_params handles multiple params to remove.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::without_query_params
+	 */
+	public function test_without_query_params_removes_multiple_params(): void {
+		$source = SourceUrl::from_string( '/page?utm_source=test&foo=bar&utm_medium=email&baz=qux' );
+		$result = $source->without_query_params( array( 'utm_source', 'utm_medium' ) );
+
+		$this->assertSame( '/page?foo=bar&baz=qux', $result->path() );
+	}
+
+	/**
+	 * Test without_query_params handles params not in URL.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::without_query_params
+	 */
+	public function test_without_query_params_ignores_missing_params(): void {
+		$source = SourceUrl::from_string( '/page?foo=bar' );
+		$result = $source->without_query_params( array( 'nonexistent' ) );
+
+		$this->assertSame( '/page?foo=bar', $result->path() );
+	}
+
+	/**
+	 * Test without_query_params handles removing all params.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::without_query_params
+	 */
+	public function test_without_query_params_removes_all_params(): void {
+		$source = SourceUrl::from_string( '/page?foo=bar&baz=qux' );
+		$result = $source->without_query_params( array( 'foo', 'baz' ) );
+
+		$this->assertSame( '/page', $result->path() );
+	}
+
+	/**
+	 * Test without_query_params handles URL with no query string.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::without_query_params
+	 */
+	public function test_without_query_params_handles_no_query(): void {
+		$source = SourceUrl::from_string( '/page' );
+		$result = $source->without_query_params( array( 'foo' ) );
+
+		$this->assertSame( '/page', $result->path() );
+	}
+
+	/**
+	 * Test query params with special characters are URL-decoded.
+	 *
+	 * SourceUrl normalizes by decoding URL-encoded characters.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::from_string
+	 */
+	public function test_query_params_with_special_characters(): void {
+		$source = SourceUrl::from_string( '/page?redirect=https%3A%2F%2Fexample.com&name=John+Doe' );
+
+		// URL-encoded values are decoded by SourceUrl.
+		$this->assertSame( '/page?redirect=https://example.com&name=John Doe', $source->path() );
+		$this->assertSame( 'redirect=https://example.com&name=John Doe', $source->query_string() );
+	}
+
+	/**
+	 * Test query params with empty value.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::from_string
+	 */
+	public function test_query_params_with_empty_value(): void {
+		$source = SourceUrl::from_string( '/page?flag=&other=value' );
+
+		$this->assertSame( '/page?flag=&other=value', $source->path() );
+	}
+
+	/**
+	 * Test query param key without value (flag-style).
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::from_string
+	 */
+	public function test_query_param_flag_style(): void {
+		$source = SourceUrl::from_string( '/page?debug&verbose' );
+
+		$this->assertSame( '/page?debug&verbose', $source->path() );
+		$this->assertSame( 'debug&verbose', $source->query_string() );
+	}
+
+	/**
+	 * Test path with only query string (edge case).
+	 *
+	 * @covers \Automattic\LegacyRedirector\Domain\SourceUrl::from_string
+	 */
+	public function test_path_with_root_and_query(): void {
+		$source = SourceUrl::from_string( '/?foo=bar' );
+
+		$this->assertSame( '/?foo=bar', $source->path() );
+		$this->assertSame( '/', $source->path_without_query() );
+		$this->assertSame( 'foo=bar', $source->query_string() );
+	}
 }

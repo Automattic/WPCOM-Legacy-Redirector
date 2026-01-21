@@ -9,7 +9,7 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Domain;
 
-use Automattic\LegacyRedirector\Utils;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\UrlUtils;
 use InvalidArgumentException;
 
 /**
@@ -81,7 +81,7 @@ final class SourceUrl {
 
 		// Parse URL into components.
 		try {
-			$components = Utils::mb_parse_url( $url );
+			$components = UrlUtils::mb_parse_url( $url );
 		} catch ( InvalidArgumentException $e ) {
 			throw new InvalidArgumentException(
 				sprintf(

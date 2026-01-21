@@ -54,14 +54,33 @@ wp wpcom-legacy-redirector export-to-csv /path/to/export.csv
 ### Programmatic Usage
 
 ```php
+use Automattic\LegacyRedirector\Domain\Destination;
+use Automattic\LegacyRedirector\Domain\SourceUrl;
+
+// Get the redirect manager via the helper function (recommended for third-party code)
+$manager = wpcom_legacy_redirector_container()->manager();
+
 // Add a redirect to an external URL
-WPCOM_Legacy_Redirector::insert_legacy_redirect( '/old-page', 'https://example.com/new-page' );
+$source      = SourceUrl::from_string( '/old-page' );
+$destination = Destination::from_mixed( 'https://example.com/new-page' );
+$result      = $manager->create_redirect( $source, $destination );
 
-// Add a redirect to an internal post
-WPCOM_Legacy_Redirector::insert_legacy_redirect( '/old-page', $post_id );
+if ( $result->is_error() ) {
+    // Handle error: $result->error_code(), $result->error_message()
+}
+$redirect_id = $result->redirect_id();
 
-// Check if a redirect exists
-$redirect_uri = Automattic\LegacyRedirector\Lookup::get_redirect_uri( '/old-page' );
+// Add a redirect to an internal post by ID
+$source      = SourceUrl::from_string( '/another-old-page' );
+$destination = Destination::from_mixed( $post_id );
+$result      = $manager->create_redirect( $source, $destination );
+
+// Check if a redirect exists and get its data
+$redirect_data = wpcom_legacy_redirector_container()->executor()->get_redirect_data( '/old-page' );
+if ( $redirect_data ) {
+    $redirect_url    = $redirect_data['url'];
+    $redirect_status = $redirect_data['status_code'];
+}
 ```
 
 ## How It Works
