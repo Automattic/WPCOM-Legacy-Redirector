@@ -8,16 +8,23 @@ Handles redirects for legacy WordPress.com URLs.
 |----------|-------|
 | **Main file** | `wpcom-legacy-redirector.php` |
 | **Text domain** | `wpcom-legacy-redirector` |
-| **Function prefix** | `wpcom_legacy_redirector_` |
-| **Namespace** | Global |
-| **Source directory** | `includes/` |
-| **Version** | 1.4.0-alpha |
+| **Namespace** | `Automattic\LegacyRedirector` |
+| **Source directory** | `src/` |
+| **Version** | 2.0.0-alpha |
 
 ## Architecture
 
-- Uses custom post type for redirect storage
+Uses Domain-Driven Design (DDD) with three layers:
+
+- **Domain** (`src/Domain/`) - Value objects, entities, repository interfaces
+- **Application** (`src/Application/`) - Use cases and services
+- **Infrastructure** (`src/Infrastructure/`) - WordPress integration, persistence
+
+Key classes:
+- `RedirectManager` - Creates, updates, deletes redirects
+- `RedirectExecutor` - Handles redirect resolution at runtime
+- `RedirectValidator` - Validates redirect rules
 - WP-CLI commands for bulk operations
-- `includes/` contains main classes
 
 ## Testing
 

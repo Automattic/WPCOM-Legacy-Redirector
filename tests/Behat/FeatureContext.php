@@ -118,20 +118,20 @@ PHP;
 			return; // Already active, nothing to do.
 		}
 
-		// Try the CI folder name format.
-		$this->run_wp_cli_command( 'plugin is-active WPCOM-Legacy-Redirector/wpcom-legacy-redirector.php', false );
+		// Try the folder/file format (CI environments).
+		$this->run_wp_cli_command( 'plugin is-active wpcom-legacy-redirector/wpcom-legacy-redirector.php', false );
 		if ( 0 === $this->exit_code ) {
 			return; // Already active, nothing to do.
 		}
 
-		// Not active, try to activate with lowercase slug (local development).
+		// Not active, try to activate with slug (local development).
 		$this->run_wp_cli_command( 'plugin activate wpcom-legacy-redirector', false );
 		if ( 0 === $this->exit_code ) {
 			return;
 		}
 
-		// Try CI folder name format.
-		$this->run_wp_cli_command( 'plugin activate WPCOM-Legacy-Redirector/wpcom-legacy-redirector.php', false );
+		// Try folder/file format (CI environments).
+		$this->run_wp_cli_command( 'plugin activate wpcom-legacy-redirector/wpcom-legacy-redirector.php', false );
 		if ( 0 === $this->exit_code ) {
 			return;
 		}

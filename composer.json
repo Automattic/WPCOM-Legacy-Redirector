@@ -9,10 +9,10 @@
 			"homepage": "http://automattic.com/"
 		}
 	],
-	"homepage": "https://github.com/Automattic/WPCOM-Legacy-Redirector",
+	"homepage": "https://github.com/Automattic/wpcom-legacy-redirector",
 	"support": {
-		"issues": "https://github.com/Automattic/WPCOM-Legacy-Redirector/issues",
-		"source": "https://github.com/Automattic/WPCOM-Legacy-Redirector"
+		"issues": "https://github.com/Automattic/wpcom-legacy-redirector/issues",
+		"source": "https://github.com/Automattic/wpcom-legacy-redirector"
 	},
 	"require": {
 		"php": ">=8.2",
@@ -56,8 +56,8 @@
 		"test:behat": "behat --colors",
 		"test:behat-rerun": "behat --colors --rerun",
 		"test:unit": "@php ./vendor/bin/phpunit --testdox --no-coverage",
-		"test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
-		"test:integration-ms": "wp-env run tests-cli --env-cwd=wp-content/plugins/WPCOM-Legacy-Redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
+		"test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist",
+		"test:integration-ms": "wp-env run tests-cli --env-cwd=wp-content/plugins/wpcom-legacy-redirector /bin/bash -c 'WP_MULTISITE=1 ./vendor/bin/phpunit --testsuite integration -c phpunit-integration.xml.dist'"
 	},
 	"scripts-descriptions": {
 		"coverage": "Run tests with code coverage reporting",

@@ -1,6 +1,6 @@
 # WPCOM Legacy Redirector
 
-Stable tag: 1.4.0-alpha
+Stable tag: 2.0.0-alpha
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.2
@@ -158,11 +158,11 @@ For detailed command options, run `wp help wpcom-legacy-redirector`.
 
 ## Documentation
 
-See the [Wiki](https://github.com/Automattic/WPCOM-Legacy-Redirector/wiki) for detailed documentation.
+See the [Wiki](https://github.com/Automattic/wpcom-legacy-redirector/wiki) for detailed documentation.
 
 ## Support
 
-- **Bug reports & features**: [GitHub Issues](https://github.com/Automattic/WPCOM-Legacy-Redirector/issues)
+- **Bug reports & features**: [GitHub Issues](https://github.com/Automattic/wpcom-legacy-redirector/issues)
 - **VIP customers**: Contact [WordPress VIP Support](https://wpvip.com/wordpress-vip-enterprise-support/)
 
 Please use GitHub Issues only for bug reports and feature requests, not general support questions.

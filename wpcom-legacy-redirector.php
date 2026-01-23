@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: WPCOM Legacy Redirector
- * Plugin URI: https://github.com/Automattic/WPCOM-Legacy-Redirector
+ * Plugin URI: https://github.com/Automattic/wpcom-legacy-redirector
  * Description: Simple plugin for handling legacy redirects in a scalable manner.
- * Version: 1.4.0-alpha
+ * Version: 2.0.0-alpha
  * Requires at least: 6.4
  * Requires PHP: 8.2
  * Author: Automattic / WordPress VIP
@@ -31,7 +31,7 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\PluginBootstrapper;
 
 // Namespaced constants.
 const PLUGIN_FILE = __FILE__;
-const VERSION     = '1.4.0-alpha';
+const VERSION     = '2.0.0-alpha';
 
 // Global constants for backwards compatibility.
 \define( 'WPCOM_LEGACY_REDIRECTOR_FILE', __FILE__ );

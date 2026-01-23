@@ -4,7 +4,7 @@ Thank you for your interest in contributing to WPCOM Legacy Redirector! This doc
 
 ## Requirements
 
-- **PHP:** 7.4+
+- **PHP:** 8.2+
 - **WordPress:** 6.4+
 - **Coding Standards:** [WordPress VIP Coding Standards](https://github.com/Automattic/VIP-Coding-Standards)
 
@@ -12,8 +12,8 @@ Thank you for your interest in contributing to WPCOM Legacy Redirector! This doc
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Automattic/WPCOM-Legacy-Redirector.git
-   cd WPCOM-Legacy-Redirector
+   git clone https://github.com/Automattic/wpcom-legacy-redirector.git
+   cd wpcom-legacy-redirector
    ```
 
 2. **Install dependencies:**
@@ -145,7 +145,7 @@ Key classes:
 ## Getting Help
 
 - **GitHub Issues**: For bug reports and feature requests
-- **Wiki**: [Documentation](https://github.com/Automattic/WPCOM-Legacy-Redirector/wiki)
+- **Wiki**: [Documentation](https://github.com/Automattic/wpcom-legacy-redirector/wiki)
 - **WordPress VIP Support**: For WPVIP customers
 
 ## Recognition
