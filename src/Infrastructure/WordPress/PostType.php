@@ -33,6 +33,22 @@ final class PostType {
 	public function register(): void {
 		register_post_type( self::POST_TYPE, $this->get_args() );
 		add_filter( 'bulk_post_updated_messages', array( $this, 'bulk_post_updated_messages' ), 10, 2 );
+		add_filter( 'ep_indexable_post_types', array( $this, 'exclude_from_elasticpress' ) );
+	}
+
+	/**
+	 * Exclude redirect post type from ElasticPress/VIP Search indexing.
+	 *
+	 * Redirects are internal data that should not appear in search results.
+	 *
+	 * @see https://docs.wpvip.com/enterprise-search/indexing/post-types/#1-excluding-post-types-from-the-allow-list
+	 *
+	 * @param array<string, string> $post_types Indexable post types.
+	 * @return array<string, string> Filtered post types.
+	 */
+	public function exclude_from_elasticpress( array $post_types ): array {
+		unset( $post_types[ self::POST_TYPE ] );
+		return $post_types;
 	}
 
 	/**
