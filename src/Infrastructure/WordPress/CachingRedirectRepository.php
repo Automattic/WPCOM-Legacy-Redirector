@@ -30,7 +30,7 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 	 *
 	 * Version suffix allows cache busting when schema changes.
 	 */
-	public const CACHE_GROUP = 'vip-legacy-redirect-2';
+	public const CACHE_GROUP = 'vip-legacy-redirect-3';
 
 	/**
 	 * The inner repository to delegate to.
@@ -57,7 +57,7 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 	 * @return Redirect|null The redirect if found and active, null otherwise.
 	 */
 	public function find_by_source( SourceUrl $source ): ?Redirect {
-		$cache_key = $source->hash();
+		$cache_key = $this->get_cache_key( $source );
 		$post_id   = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
 		if ( false === $post_id ) {
@@ -125,7 +125,7 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 		$saved = $this->inner->save( $redirect );
 
 		// Pre-warm cache with the new ID.
-		wp_cache_set( $saved->source()->hash(), $saved->id(), self::CACHE_GROUP );
+		wp_cache_set( $this->get_cache_key( $saved->source() ), $saved->id(), self::CACHE_GROUP );
 
 		return $saved;
 	}
@@ -143,7 +143,7 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 
 		if ( $result ) {
 			// Mark as deleted in cache.
-			wp_cache_set( $redirect->source()->hash(), 0, self::CACHE_GROUP );
+			wp_cache_set( $this->get_cache_key( $redirect->source() ), 0, self::CACHE_GROUP );
 		}
 
 		return $result;
@@ -158,7 +158,7 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 	 * @return int The redirect ID, or 0 if not found.
 	 */
 	public function get_id_by_source( SourceUrl $source ): int {
-		$cache_key = $source->hash();
+		$cache_key = $this->get_cache_key( $source );
 		$post_id   = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
 		if ( false !== $post_id ) {
@@ -177,6 +177,18 @@ final class CachingRedirectRepository implements RedirectRepositoryInterface {
 	 * @param SourceUrl $source The source URL to invalidate.
 	 */
 	private function invalidate_cache( SourceUrl $source ): void {
-		wp_cache_delete( $source->hash(), self::CACHE_GROUP );
+		wp_cache_delete( $this->get_cache_key( $source ), self::CACHE_GROUP );
+	}
+
+	/**
+	 * Get the cache key for a source URL.
+	 *
+	 * Includes blog ID prefix to prevent cross-site cache contamination in multisite.
+	 *
+	 * @param SourceUrl $source The source URL.
+	 * @return string The cache key.
+	 */
+	private function get_cache_key( SourceUrl $source ): string {
+		return sprintf( '%d:%s', get_current_blog_id(), $source->hash() );
 	}
 }

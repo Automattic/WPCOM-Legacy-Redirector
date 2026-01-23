@@ -73,7 +73,16 @@ final class SourceUrl {
 	 * @throws InvalidArgumentException If the URL is invalid or cannot be parsed.
 	 */
 	private static function normalise( string $url ): string {
-		// Sanitise the URL first.
+		// Ensure path starts with / before sanitisation.
+		// Without this, esc_url_raw('path') becomes 'http://path' (treated as domain).
+		// REQUEST_URI always starts with /, so source paths must too.
+		// Full URLs (http/https) are allowed - the path will be extracted below.
+		$url = ltrim( $url );
+		if ( '' !== $url && ! str_starts_with( $url, '/' ) && ! str_starts_with( $url, 'http' ) ) {
+			$url = '/' . $url;
+		}
+
+		// Sanitise the URL.
 		$url = esc_url_raw( $url );
 		if ( empty( $url ) ) {
 			throw new InvalidArgumentException( 'The URL does not validate.' );

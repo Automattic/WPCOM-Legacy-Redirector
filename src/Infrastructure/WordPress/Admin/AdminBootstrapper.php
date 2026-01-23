@@ -17,6 +17,7 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Ajax\SearchPostsH
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Ajax\ValidateRedirectHandler;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\ListTable\ColumnsManager;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\ListTable\RowActionsManager;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\ListTable\ScreenEnhancements;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\ListTable\ViewFilters;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Notices\ValidationNotices;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Pages\RedirectFormPage;
@@ -113,6 +114,9 @@ final class AdminBootstrapper {
 
 		$view_filters = new ViewFilters();
 		$view_filters->register();
+
+		$screen_enhancements = new ScreenEnhancements();
+		$screen_enhancements->register();
 	}
 
 	/**

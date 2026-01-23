@@ -154,6 +154,9 @@ final class RedirectExecutor {
 	/**
 	 * Extract the path and query string from a URL.
 	 *
+	 * In subdirectory multisite, strips the subsite path prefix to get
+	 * the site-relative path that matches stored redirects.
+	 *
 	 * @param string $url The URL.
 	 * @return string The path with optional query string.
 	 */
@@ -167,6 +170,18 @@ final class RedirectExecutor {
 		}
 
 		$path = $url_info['path'];
+
+		// In subdirectory multisite, strip the subsite path prefix.
+		// e.g., /site3/to-slug becomes /to-slug for site3.
+		$home_path = wp_parse_url( home_url(), PHP_URL_PATH );
+		if ( ! empty( $home_path ) && '/' !== $home_path && str_starts_with( $path, $home_path ) ) {
+			$path = substr( $path, strlen( rtrim( $home_path, '/' ) ) );
+			// Ensure path starts with / after stripping.
+			if ( empty( $path ) ) {
+				$path = '/';
+			}
+		}
+
 		if ( isset( $url_info['query'] ) ) {
 			$path .= '?' . $url_info['query'];
 		}

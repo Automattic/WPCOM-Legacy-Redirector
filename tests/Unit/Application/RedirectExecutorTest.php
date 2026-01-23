@@ -55,6 +55,18 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	}
 
 	/**
+	 * Stub home_url() to return a URL for path extraction and destination resolution.
+	 *
+	 * In subdirectory multisite, extract_path() uses home_url() to strip the subsite
+	 * path prefix. For single-site (default), it returns a URL without path component.
+	 *
+	 * @param string $url The URL to return (default: https://example.com).
+	 */
+	private function stub_home_url( string $url = 'https://example.com' ): void {
+		Functions\when( 'home_url' )->justReturn( $url );
+	}
+
+	/**
 	 * Creates a test source URL.
 	 *
 	 * @param string $path The URL path.
@@ -111,6 +123,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_redirect_data_for_valid_url(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/old-page', '/new-page' );
 
 		// Mock apply_filters for request_path filter (returns path unchanged).
@@ -132,11 +145,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->with( Mockery::on( fn( $s ) => $s->path() === '/old-page' ) )
 			->andReturn( $redirect );
 
-		// Mock home_url for resolving the destination.
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
-
 		// Mock apply_filters for redirect_status filter.
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
 			->once()
@@ -156,6 +164,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_redirect_data_for_post_id_destination(): void {
+		$this->stub_home_url();
 		$redirect = Redirect::reconstitute(
 			123,
 			$this->create_source( '/old-page' ),
@@ -199,6 +208,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_extracts_path_from_full_url(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/old-page', '/new-page' );
 
 		Filters\expectApplied( 'wpcom_legacy_redirector_request_path' )
@@ -214,10 +224,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->shouldReceive( 'find_by_source' )
 			->once()
 			->andReturn( $redirect );
-
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
 
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
 			->once()
@@ -239,6 +245,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_applies_request_path_filter(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/modified-path', '/new-page' );
 
 		// The filter modifies the path.
@@ -257,10 +264,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->once()
 			->with( Mockery::on( fn( $s ) => $s->path() === '/modified-path' ) )
 			->andReturn( $redirect );
-
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
 
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
 			->once()
@@ -281,6 +284,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_preserves_specified_query_params(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/old-page?other=value', '/new-page' );
 
 		// Path includes query string.
@@ -308,10 +312,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->with( Mockery::on( fn( $s ) => $s->path() === '/old-page?other=value' ) )
 			->andReturn( $redirect );
 
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
-
 		// Mock add_query_arg to append preserved params to destination.
 		Functions\expect( 'add_query_arg' )
 			->once()
@@ -338,6 +338,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_applies_redirect_status_filter(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/old-page', '/new-page' );
 
 		Filters\expectApplied( 'wpcom_legacy_redirector_request_path' )
@@ -352,10 +353,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->shouldReceive( 'find_by_source' )
 			->once()
 			->andReturn( $redirect );
-
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
 
 		// Filter changes status to 302.
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
@@ -379,6 +376,8 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_null_for_empty_path(): void {
+		$this->stub_home_url();
+
 		Filters\expectApplied( 'wpcom_legacy_redirector_request_path' )
 			->once()
 			->with( '' )
@@ -395,6 +394,8 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_null_when_filter_empties_path(): void {
+		$this->stub_home_url();
+
 		Filters\expectApplied( 'wpcom_legacy_redirector_request_path' )
 			->once()
 			->with( '/some-path' )
@@ -411,6 +412,8 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_null_when_redirect_not_found(): void {
+		$this->stub_home_url();
+
 		Filters\expectApplied( 'wpcom_legacy_redirector_request_path' )
 			->once()
 			->andReturnFirstArg();
@@ -443,6 +446,8 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_null_for_invalid_source_url(): void {
+		$this->stub_home_url();
+
 		// The filter returns a path that, when passed to SourceUrl::from_string(),
 		// will cause an InvalidArgumentException because after parsing it has
 		// neither path nor query.
@@ -474,6 +479,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_returns_null_when_permalink_fails(): void {
+		$this->stub_home_url();
 		$redirect = Redirect::reconstitute(
 			123,
 			$this->create_source( '/old-page' ),
@@ -511,6 +517,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_handles_encoded_characters(): void {
+		$this->stub_home_url();
 		$redirect = $this->create_redirect( '/hello world', '/new-page' );
 
 		// URL decoding should convert %20 to space.
@@ -529,10 +536,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->with( Mockery::on( fn( $s ) => $s->path() === '/hello world' ) )
 			->andReturn( $redirect );
 
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
-
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
 			->once()
 			->andReturn( 301 );
@@ -548,6 +551,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::get_redirect_data
 	 */
 	public function test_get_redirect_data_handles_absolute_destination_url(): void {
+		$this->stub_home_url();
 		$redirect = Redirect::reconstitute(
 			123,
 			$this->create_source( '/old-page' ),
@@ -567,11 +571,6 @@ final class RedirectExecutorTest extends MonkeyStubs {
 			->shouldReceive( 'find_by_source' )
 			->once()
 			->andReturn( $redirect );
-
-		// home_url is called for resolve() but absolute URL doesn't use it.
-		Functions\expect( 'home_url' )
-			->once()
-			->andReturn( 'https://example.com' );
 
 		Filters\expectApplied( 'wpcom_legacy_redirector_redirect_status' )
 			->once()
@@ -712,6 +711,8 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectExecutor::maybe_redirect
 	 */
 	public function test_maybe_redirect_exits_early_when_no_redirect_found(): void {
+		$this->stub_home_url();
+
 		// Set REQUEST_URI.
 		$original_request_uri    = $_SERVER['REQUEST_URI'] ?? null;
 		$_SERVER['REQUEST_URI'] = '/nonexistent-page';

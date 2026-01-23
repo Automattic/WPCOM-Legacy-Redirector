@@ -13,7 +13,6 @@ use Automattic\LegacyRedirector\Domain\Destination;
 use Automattic\LegacyRedirector\Domain\Redirect;
 use Automattic\LegacyRedirector\Domain\RedirectRepositoryInterface;
 use Automattic\LegacyRedirector\Domain\SourceUrl;
-use Automattic\LegacyRedirector\Infrastructure\WordPress\PostTypeRedirectRepository;
 
 /**
  * Service responsible for managing redirects in admin context.
@@ -22,14 +21,14 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\PostTypeRedirectReposit
  * This service works with the repository to persist changes and
  * manages cache invalidation.
  */
-final class RedirectManager {
+class RedirectManager {
 
 	/**
 	 * The redirect repository.
 	 *
-	 * @var PostTypeRedirectRepository
+	 * @var RedirectRepositoryInterface
 	 */
-	private PostTypeRedirectRepository $repository;
+	private RedirectRepositoryInterface $repository;
 
 	/**
 	 * The redirect validator.
@@ -43,15 +42,15 @@ final class RedirectManager {
 	 *
 	 * @var string
 	 */
-	private const CACHE_GROUP = 'vip-legacy-redirect-2';
+	private const CACHE_GROUP = 'vip-legacy-redirect-3';
 
 	/**
 	 * Constructor.
 	 *
-	 * @param PostTypeRedirectRepository $repository The redirect repository.
-	 * @param RedirectValidator|null     $validator  The redirect validator (optional, created if not provided).
+	 * @param RedirectRepositoryInterface $repository The redirect repository.
+	 * @param RedirectValidator|null      $validator  The redirect validator (optional, created if not provided).
 	 */
-	public function __construct( PostTypeRedirectRepository $repository, ?RedirectValidator $validator = null ) {
+	public function __construct( RedirectRepositoryInterface $repository, ?RedirectValidator $validator = null ) {
 		$this->repository = $repository;
 		$this->validator  = $validator ?? new RedirectValidator( $repository );
 	}
@@ -252,9 +251,12 @@ final class RedirectManager {
 	/**
 	 * Invalidate the cache for a redirect.
 	 *
+	 * Cache key includes blog ID prefix to ensure multisite isolation.
+	 *
 	 * @param string $url_hash The URL hash.
 	 */
 	private function invalidate_cache( string $url_hash ): void {
-		wp_cache_delete( $url_hash, self::CACHE_GROUP );
+		$cache_key = sprintf( '%d:%s', get_current_blog_id(), $url_hash );
+		wp_cache_delete( $cache_key, self::CACHE_GROUP );
 	}
 }

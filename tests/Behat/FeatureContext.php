@@ -179,4 +179,97 @@ PHP;
 		$this->create_mu_plugin( 'allowed_redirect_hosts-' . $host, $filter_code );
 		$this->added_hosts[] = $host;
 	}
+
+	/**
+	 * Temporary files created for cleanup.
+	 *
+	 * @var string[]
+	 */
+	private array $temp_files = array();
+
+	/**
+	 * Create a CSV file with given content.
+	 *
+	 * @Given a CSV file :filename with content:
+	 * @throws RuntimeException If file creation fails.
+	 * @param string $filename The filename to create.
+	 * @param \Behat\Gherkin\Node\PyStringNode $content The CSV content.
+	 * @return void
+	 */
+	public function given_a_csv_file_with_content( string $filename, \Behat\Gherkin\Node\PyStringNode $content ): void {
+		$csv_content = (string) $content;
+
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding for shell safety.
+		$encoded = base64_encode( $csv_content );
+
+		// Create file in the container's /tmp directory.
+		$file_path = '/tmp/' . $filename;
+		$command   = sprintf(
+			"npx wp-env run tests-cli bash -c 'echo %s | base64 -d > %s' 2>&1",
+			escapeshellarg( $encoded ),
+			escapeshellarg( $file_path )
+		);
+
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- Required for Behat file setup.
+		exec( $command, $output, $exit_code );
+
+		if ( 0 !== $exit_code ) {
+			throw new RuntimeException( 'Failed to create CSV file: ' . implode( "\n", $output ) );
+		}
+
+		$this->temp_files[] = $file_path;
+	}
+
+	/**
+	 * Clean up temporary files created during tests.
+	 *
+	 * @AfterScenario
+	 * @return void
+	 */
+	public function cleanup_temp_files(): void {
+		foreach ( $this->temp_files as $file_path ) {
+			$command = sprintf(
+				"npx wp-env run tests-cli bash -c 'rm -f %s' 2>&1",
+				escapeshellarg( $file_path )
+			);
+
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- Required for Behat cleanup.
+			exec( $command );
+		}
+		$this->temp_files = array();
+	}
+
+	/**
+	 * Create a redirect via WP-CLI.
+	 *
+	 * @Given there is a redirect from :from to :to
+	 * @throws RuntimeException If redirect creation fails.
+	 * @param string $from The source URL path.
+	 * @param string $to   The destination URL or post ID.
+	 * @return void
+	 */
+	public function there_is_a_redirect_from_to( string $from, string $to ): void {
+		$this->run_wp_cli_command(
+			sprintf( 'wpcom-legacy-redirector insert-redirect %s %s', $from, $to ),
+			false
+		);
+
+		if ( 0 !== $this->exit_code ) {
+			throw new RuntimeException( 'Failed to create redirect: ' . $this->output . ' ' . $this->error_output );
+		}
+	}
+
+	/**
+	 * Save STDOUT value to a placeholder for later use.
+	 *
+	 * This allows capturing post IDs and other output for use in subsequent steps.
+	 *
+	 * @Given save STDOUT as {VARIABLE}
+	 * @throws RuntimeException If no output to save.
+	 * @return void
+	 */
+	public function save_stdout_as_variable(): void {
+		// This step is handled by the base class or WP-CLI Behat framework.
+		// Kept here for documentation purposes.
+	}
 }

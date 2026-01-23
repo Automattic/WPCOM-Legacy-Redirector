@@ -214,8 +214,8 @@ final class LookupTest extends TestCase {
 		$first_result = $this->container()->executor()->get_redirect_data( $from_url );
 		$this->assertSame( $to_url, $first_result['url'] );
 
-		// Check cache is set.
-		$url_hash  = SourceUrl::from_string( $from_url )->hash();
+		// Check cache is set (key includes blog ID prefix for multisite safety).
+		$url_hash  = get_current_blog_id() . ':' . SourceUrl::from_string( $from_url )->hash();
 		$cached_id = wp_cache_get( $url_hash, CachingRedirectRepository::CACHE_GROUP );
 		$this->assertNotFalse( $cached_id );
 

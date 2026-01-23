@@ -12,7 +12,6 @@ namespace Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\ListTable;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Ajax\ValidateRedirectHandler;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Capability;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\PostType;
-use Automattic\LegacyRedirector\Infrastructure\WordPress\UrlUtils;
 
 /**
  * Handles row actions for the redirects list table.
@@ -116,11 +115,10 @@ final class RowActionsManager {
 			esc_html__( 'Validate', 'wpcom-legacy-redirector' )
 		);
 
-		// Follow link.
-		$follow_home_domain  = UrlUtils::get_home_domain_without_path();
+		// Follow link - use home_url() to include subsite path in subdirectory multisite.
 		$actions['follow'] = sprintf(
 			'<a href="%1$s" target="_blank">%2$s</a>',
-			esc_url( $follow_home_domain . $post->post_title ),
+			esc_url( home_url( $post->post_title ) ),
 			esc_html__( 'Follow', 'wpcom-legacy-redirector' )
 		);
 

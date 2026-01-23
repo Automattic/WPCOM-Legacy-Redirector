@@ -165,14 +165,46 @@ final class ColumnsManager {
 	private function render_excerpt_destination( string $excerpt ): void {
 		// Check if it's the Home URL.
 		if ( $this->is_home_path( $excerpt ) ) {
-			echo esc_html( $excerpt );
+			$this->render_relative_path_with_prefix( $excerpt );
 		} elseif ( str_starts_with( $excerpt, 'http' ) ) {
-			echo esc_url_raw( $excerpt );
+			// On multisite, use bold for consistency with relative paths.
+			if ( is_multisite() ) {
+				printf( '<strong>%s</strong>', esc_url_raw( $excerpt ) );
+			} else {
+				echo esc_url_raw( $excerpt );
+			}
 		} elseif ( 'private' === $this->check_path_publicity( $excerpt ) ) {
-			echo esc_html( $excerpt ) . '<br /><em>' . esc_html__( 'Warning: Redirect is not a public URL.', 'wpcom-legacy-redirector' ) . '</em>';
+			$this->render_relative_path_with_prefix( $excerpt );
+			echo '<br /><em>' . esc_html__( 'Warning: Redirect is not a public URL.', 'wpcom-legacy-redirector' ) . '</em>';
 		} else {
-			echo esc_html( $excerpt );
+			$this->render_relative_path_with_prefix( $excerpt );
 		}
+	}
+
+	/**
+	 * Render a relative path with the site's base URL as a grey prefix.
+	 *
+	 * On multisite, this helps clarify that /path resolves to the current site's
+	 * base URL, not the network root. Shows the home_url prefix in grey followed
+	 * by the path in bold.
+	 *
+	 * On single site, displays the path as plain text (no prefix or bold needed).
+	 *
+	 * @param string $path The relative path (e.g., "/hello-world").
+	 * @return void
+	 */
+	private function render_relative_path_with_prefix( string $path ): void {
+		if ( ! is_multisite() || ! str_starts_with( $path, '/' ) ) {
+			echo esc_html( $path );
+			return;
+		}
+
+		$home_url = untrailingslashit( home_url() );
+		printf(
+			'<span style="color: #888;">%s</span><strong>%s</strong>',
+			esc_html( $home_url ),
+			esc_html( $path )
+		);
 	}
 
 	/**
@@ -190,12 +222,15 @@ final class ColumnsManager {
 				echo '<em>' . esc_html__( 'Redirect is pointing to a Post ID that does not exist.', 'wpcom-legacy-redirector' ) . '</em>';
 				break;
 			case 'private':
-				$permalink = $parent ? get_permalink( $parent ) : '';
-				echo esc_html( $permalink ) . '<br /><em>' . esc_html__( 'Warning: Redirect is not a public URL.', 'wpcom-legacy-redirector' ) . '</em>';
+				$permalink     = $parent ? get_permalink( $parent ) : '';
+				$relative_path = str_replace( home_url(), '', $permalink );
+				$this->render_relative_path_with_prefix( $relative_path );
+				echo '<br /><em>' . esc_html__( 'Warning: Redirect is not a public URL.', 'wpcom-legacy-redirector' ) . '</em>';
 				break;
 			default:
-				$permalink = $parent ? get_permalink( $parent ) : '';
-				echo esc_html( str_replace( home_url(), '', $permalink ) );
+				$permalink     = $parent ? get_permalink( $parent ) : '';
+				$relative_path = str_replace( home_url(), '', $permalink );
+				$this->render_relative_path_with_prefix( $relative_path );
 		}
 	}
 

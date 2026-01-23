@@ -19,7 +19,6 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Ajax\CheckDuplica
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Ajax\SearchPostsHandler;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Capability;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\PostType;
-use Automattic\LegacyRedirector\Infrastructure\WordPress\UrlUtils;
 
 /**
  * Handles the Add and Edit redirect admin pages.
@@ -71,6 +70,7 @@ final class RedirectFormPage {
 		add_action( 'load-post.php', array( $this, 'redirect_post_edit' ) );
 		add_action( 'admin_post_save_redirect', array( $this, 'handle_save' ) );
 		add_action( 'current_screen', array( $this, 'set_edit_page_title' ) );
+		add_action( 'current_screen', array( $this, 'add_contextual_help' ) );
 	}
 
 	/**
@@ -246,14 +246,14 @@ final class RedirectFormPage {
 				<div id="message" class="updated notice is-dismissible">
 					<p>
 						<?php esc_html_e( 'Redirect created successfully.', 'wpcom-legacy-redirector' ); ?>
-						<a href="<?php echo esc_url( UrlUtils::get_home_domain_without_path() . $redirect_from ); ?>" target="_blank"><?php esc_html_e( 'Test it', 'wpcom-legacy-redirector' ); ?></a>
+						<a href="<?php echo esc_url( home_url( $redirect_from ) ); ?>" target="_blank"><?php esc_html_e( 'Test it', 'wpcom-legacy-redirector' ); ?></a>
 					</p>
 				</div>
 			<?php elseif ( 'updated' === $message && $is_edit ) : ?>
 				<div id="message" class="updated notice is-dismissible">
 					<p>
 						<?php esc_html_e( 'Redirect updated successfully.', 'wpcom-legacy-redirector' ); ?>
-						<a href="<?php echo esc_url( UrlUtils::get_home_domain_without_path() . $redirect_from ); ?>" target="_blank"><?php esc_html_e( 'Test it', 'wpcom-legacy-redirector' ); ?></a>
+						<a href="<?php echo esc_url( home_url( $redirect_from ) ); ?>" target="_blank"><?php esc_html_e( 'Test it', 'wpcom-legacy-redirector' ); ?></a>
 					</p>
 				</div>
 			<?php endif; ?>
@@ -279,8 +279,11 @@ final class RedirectFormPage {
 								<label for="redirect_from"><?php esc_html_e( 'Redirect From', 'wpcom-legacy-redirector' ); ?> <span class="required">*</span></label>
 							</th>
 							<td>
-								<input type="text" name="redirect_from" id="redirect_from" value="<?php echo esc_attr( $redirect_from ); ?>" class="regular-text code" required />
-								<p class="description"><?php esc_html_e( 'The source path that should redirect (e.g., /old-page).', 'wpcom-legacy-redirector' ); ?></p>
+								<div style="display: inline-flex; align-items: center;">
+									<span class="code" style="padding: 0 8px; background: #f0f0f1; border: 1px solid #8c8f94; border-right: 0; border-radius: 4px 0 0 4px; line-height: 28px; color: #50575e;">/</span>
+									<input type="text" name="redirect_from" id="redirect_from" value="<?php echo esc_attr( ltrim( $redirect_from, '/' ) ); ?>" class="regular-text code" style="border-radius: 0 4px 4px 0;" required placeholder="old-page" />
+								</div>
+								<p class="description"><?php esc_html_e( 'The source path that should redirect (e.g., old-page).', 'wpcom-legacy-redirector' ); ?></p>
 								<p id="redirect_from_error" class="notice notice-error inline" style="display: none; padding: 8px 12px;"></p>
 							</td>
 						</tr>
@@ -663,5 +666,132 @@ final class RedirectFormPage {
 		);
 
 		return $messages[ $error ] ?? __( 'An error occurred.', 'wpcom-legacy-redirector' );
+	}
+
+	/**
+	 * Add contextual help to the Add/Edit Redirect pages.
+	 *
+	 * @param \WP_Screen $screen The current screen object.
+	 * @return void
+	 */
+	public function add_contextual_help( \WP_Screen $screen ): void {
+		$form_pages = array(
+			PostType::POST_TYPE . '_page_add-redirect',
+			PostType::POST_TYPE . '_page_edit-redirect',
+		);
+
+		if ( ! in_array( $screen->id, $form_pages, true ) ) {
+			return;
+		}
+
+		$screen->add_help_tab(
+			array(
+				'id'      => 'overview',
+				'title'   => __( 'Overview', 'wpcom-legacy-redirector' ),
+				'content' => $this->get_form_overview_help(),
+			)
+		);
+
+		$screen->add_help_tab(
+			array(
+				'id'      => 'source',
+				'title'   => __( 'Redirect From', 'wpcom-legacy-redirector' ),
+				'content' => $this->get_source_help(),
+			)
+		);
+
+		$screen->add_help_tab(
+			array(
+				'id'      => 'destination',
+				'title'   => __( 'Redirect To', 'wpcom-legacy-redirector' ),
+				'content' => $this->get_destination_help(),
+			)
+		);
+
+		$screen->add_help_tab(
+			array(
+				'id'      => 'tips',
+				'title'   => __( 'Tips', 'wpcom-legacy-redirector' ),
+				'content' => $this->get_tips_help(),
+			)
+		);
+
+		$screen->set_help_sidebar( $this->get_help_sidebar() );
+	}
+
+	/**
+	 * Get the form overview help content.
+	 *
+	 * @return string Help content HTML.
+	 */
+	private function get_form_overview_help(): string {
+		return '<p>' . __( 'Use this form to create or edit a redirect. A redirect automatically sends visitors from one URL to another.', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<p>' . __( 'Redirects are only triggered when the source URL would otherwise return a 404 (Not Found) error. If content already exists at the source URL, the redirect will not activate.', 'wpcom-legacy-redirector' ) . '</p>';
+	}
+
+	/**
+	 * Get the source field help content.
+	 *
+	 * @return string Help content HTML.
+	 */
+	private function get_source_help(): string {
+		return '<p>' . __( 'The <strong>Redirect From</strong> field specifies the old URL path that should trigger the redirect.', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<p>' . __( 'The leading forward slash is shown as a prefix, so just enter the path. For example:', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<ul>' .
+			'<li><code>old-page</code></li>' .
+			'<li><code>blog/2020/old-post</code></li>' .
+			'<li><code>products/discontinued-item</code></li>' .
+			'</ul>' .
+			'<p>' . __( 'The path is relative to your site\'s root. Do not include the domain name.', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<p><strong>' . __( 'Note:', 'wpcom-legacy-redirector' ) . '</strong> ' . __( 'Each source path can only have one redirect. Duplicate sources are not allowed.', 'wpcom-legacy-redirector' ) . '</p>';
+	}
+
+	/**
+	 * Get the destination field help content.
+	 *
+	 * @return string Help content HTML.
+	 */
+	private function get_destination_help(): string {
+		return '<p>' . __( 'The <strong>Redirect To</strong> field specifies where visitors should be sent. You can use three formats:', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<h4>' . __( '1. Relative Path', 'wpcom-legacy-redirector' ) . '</h4>' .
+			'<p>' . __( 'A path on the same site, starting with a forward slash:', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<ul>' .
+			'<li><code>/new-page</code></li>' .
+			'<li><code>/blog/2024/updated-post</code></li>' .
+			'</ul>' .
+			'<h4>' . __( '2. Absolute URL', 'wpcom-legacy-redirector' ) . '</h4>' .
+			'<p>' . __( 'A full URL including the domain, useful for external redirects:', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<ul>' .
+			'<li><code>https://example.com/page</code></li>' .
+			'<li><code>https://newsite.com/destination</code></li>' .
+			'</ul>' .
+			'<p><strong>' . __( 'Note:', 'wpcom-legacy-redirector' ) . '</strong> ' . __( 'External domains must be allowed via the <code>allowed_redirect_hosts</code> filter.', 'wpcom-legacy-redirector' ) . '</p>' .
+			'<h4>' . __( '3. Post ID', 'wpcom-legacy-redirector' ) . '</h4>' .
+			'<p>' . __( 'Select an existing post or page using the search field. The redirect will point to that content\'s permalink, which automatically updates if the slug changes.', 'wpcom-legacy-redirector' ) . '</p>';
+	}
+
+	/**
+	 * Get the tips help content.
+	 *
+	 * @return string Help content HTML.
+	 */
+	private function get_tips_help(): string {
+		return '<ul>' .
+			'<li>' . __( '<strong>Test your redirects</strong> &mdash; After saving, use the "Test it" link or visit the source URL to verify it works.', 'wpcom-legacy-redirector' ) . '</li>' .
+			'<li>' . __( '<strong>Use Post IDs for internal content</strong> &mdash; If redirecting to a post or page on your site, selecting it by Post ID ensures the redirect stays valid even if the slug changes.', 'wpcom-legacy-redirector' ) . '</li>' .
+			'<li>' . __( '<strong>Avoid redirect chains</strong> &mdash; Don\'t create redirects where the destination is another redirect source. This slows down the user experience.', 'wpcom-legacy-redirector' ) . '</li>' .
+			'<li>' . __( '<strong>Check for existing content</strong> &mdash; Redirects only work when the source URL returns a 404. If a page exists at that URL, delete or rename it first.', 'wpcom-legacy-redirector' ) . '</li>' .
+			'</ul>';
+	}
+
+	/**
+	 * Get the help sidebar content.
+	 *
+	 * @return string Sidebar HTML.
+	 */
+	private function get_help_sidebar(): string {
+		return '<p><strong>' . __( 'For more information:', 'wpcom-legacy-redirector' ) . '</strong></p>' .
+			'<p><a href="https://github.com/Automattic/WPCOM-Legacy-Redirector" target="_blank">' . __( 'Plugin Documentation', 'wpcom-legacy-redirector' ) . '</a></p>' .
+			'<p><a href="https://github.com/Automattic/WPCOM-Legacy-Redirector/issues" target="_blank">' . __( 'Report an Issue', 'wpcom-legacy-redirector' ) . '</a></p>';
 	}
 }

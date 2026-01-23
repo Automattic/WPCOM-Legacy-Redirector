@@ -56,9 +56,10 @@ wp wpcom-legacy-redirector export-to-csv /path/to/export.csv
 ```php
 use Automattic\LegacyRedirector\Domain\Destination;
 use Automattic\LegacyRedirector\Domain\SourceUrl;
+use function Automattic\LegacyRedirector\container;
 
 // Get the redirect manager via the helper function (recommended for third-party code)
-$manager = wpcom_legacy_redirector_container()->manager();
+$manager = container()->manager();
 
 // Add a redirect to an external URL
 $source      = SourceUrl::from_string( '/old-page' );
@@ -76,11 +77,29 @@ $destination = Destination::from_mixed( $post_id );
 $result      = $manager->create_redirect( $source, $destination );
 
 // Check if a redirect exists and get its data
-$redirect_data = wpcom_legacy_redirector_container()->executor()->get_redirect_data( '/old-page' );
+$redirect_data = container()->executor()->get_redirect_data( '/old-page' );
 if ( $redirect_data ) {
     $redirect_url    = $redirect_data['url'];
     $redirect_status = $redirect_data['status_code'];
 }
+```
+
+## Multisite Support
+
+The plugin works on WordPress multisite installations:
+
+- **Per-site redirects**: Each site manages its own redirects independently
+- **No cross-site leakage**: Redirects on Site A do not affect Site B
+- **WP-CLI support**: Use `--url=site.example.com` to manage specific sites
+
+### WP-CLI Multisite Examples
+
+```bash
+# Add redirect on specific site
+wp wpcom-legacy-redirector insert-redirect /old /new --url=site2.example.com
+
+# Export redirects from specific site
+wp wpcom-legacy-redirector export-to-csv /path/to/export.csv --url=site2.example.com
 ```
 
 ## How It Works

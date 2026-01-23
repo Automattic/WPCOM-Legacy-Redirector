@@ -50,6 +50,8 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 	protected function set_up(): void {
 		parent::set_up();
 
+		Functions\when( 'get_current_blog_id' )->justReturn( 1 );
+
 		$this->inner      = Mockery::mock( RedirectRepositoryInterface::class );
 		$this->repository = new CachingRedirectRepository( $this->inner );
 	}
@@ -96,12 +98,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( false );
 
 		Functions\expect( 'wp_cache_add' )
 			->once()
-			->with( $source->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -125,12 +127,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( false );
 
 		Functions\expect( 'wp_cache_add' )
 			->once()
-			->with( $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -153,7 +155,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 0 );
 
 		$this->inner->shouldNotReceive( 'find_by_source' );
@@ -174,7 +176,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( '0' );
 
 		$this->inner->shouldNotReceive( 'find_by_source' );
@@ -196,7 +198,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 456 );
 
 		$this->inner
@@ -222,12 +224,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 789 );
 
 		Functions\expect( 'wp_cache_set' )
 			->once()
-			->with( $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -252,7 +254,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 123 );
 
 		$this->inner
@@ -277,7 +279,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 123 );
 
 		$this->inner
@@ -302,7 +304,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 123 );
 
 		$this->inner
@@ -414,12 +416,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_delete' )
 			->once()
-			->with( $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		Functions\expect( 'wp_cache_set' )
 			->once()
-			->with( $saved_redirect->source()->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $saved_redirect->source()->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -447,12 +449,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_delete' )
 			->once()
-			->with( $new_redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $new_redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		Functions\expect( 'wp_cache_set' )
 			->once()
-			->with( $saved_redirect->source()->hash(), 456, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $saved_redirect->source()->hash(), 456, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -480,12 +482,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_delete' )
 			->once()
-			->with( $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		Functions\expect( 'wp_cache_set' )
 			->once()
-			->with( $redirect->source()->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -509,12 +511,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_delete' )
 			->once()
-			->with( $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		Functions\expect( 'wp_cache_set' )
 			->once()
-			->with( $redirect->source()->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -535,7 +537,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_delete' )
 			->once()
-			->with( $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $redirect->source()->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		Functions\expect( 'wp_cache_set' )
@@ -565,12 +567,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( false );
 
 		Functions\expect( 'wp_cache_add' )
 			->once()
-			->with( $source->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), 123, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -594,12 +596,12 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( false );
 
 		Functions\expect( 'wp_cache_add' )
 			->once()
-			->with( $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), 0, CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( true );
 
 		$this->inner
@@ -622,7 +624,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 456 );
 
 		$this->inner->shouldNotReceive( 'get_id_by_source' );
@@ -642,7 +644,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( 0 );
 
 		$this->inner->shouldNotReceive( 'get_id_by_source' );
@@ -662,7 +664,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		Functions\expect( 'wp_cache_get' )
 			->once()
-			->with( $source->hash(), CachingRedirectRepository::CACHE_GROUP )
+			->with( '1:' . $source->hash(), CachingRedirectRepository::CACHE_GROUP )
 			->andReturn( '789' );
 
 		$this->inner->shouldNotReceive( 'get_id_by_source' );

@@ -15,6 +15,12 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\BulkActionsHandle
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\StatusActionsHandler;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Notices\StatusChangeNotices;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\TrashRedirectEnhancer;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ExportToCsvCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\FindDomainsCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromCsvCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromMetaCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\InsertRedirectCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\RedirectorCommand;
 
 /**
  * Bootstraps the plugin by registering all hooks and initializing components.
@@ -59,6 +65,9 @@ final class PluginBootstrapper {
 
 		// Initialize admin components.
 		$this->init_admin();
+
+		// Register WP-CLI commands.
+		$this->register_cli_commands();
 	}
 
 	/**
@@ -119,5 +128,50 @@ final class PluginBootstrapper {
 		// Register trash redirect enhancer.
 		$trash_enhancer = new TrashRedirectEnhancer();
 		$trash_enhancer->register();
+	}
+
+	/**
+	 * Register WP-CLI commands.
+	 *
+	 * @return void
+	 */
+	private function register_cli_commands(): void {
+		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
+			return;
+		}
+
+		// Register parent command for help text.
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector',
+			RedirectorCommand::class
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector find-domains',
+			new FindDomainsCommand()
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector insert-redirect',
+			new InsertRedirectCommand( $this->container->manager() )
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector import-from-meta',
+			new ImportFromMetaCommand(
+				$this->container->manager(),
+				$this->container->inner_repository()
+			)
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector import-from-csv',
+			new ImportFromCsvCommand( $this->container->manager() )
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector export-to-csv',
+			new ExportToCsvCommand()
+		);
 	}
 }
