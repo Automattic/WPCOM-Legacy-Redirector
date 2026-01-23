@@ -15,12 +15,19 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\BulkActionsHandle
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\StatusActionsHandler;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\Notices\StatusChangeNotices;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Admin\TrashRedirectEnhancer;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\DeleteCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\DisableCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\EnableCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ExportToCsvCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\FindDomainsCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\GetCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromCsvCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ImportFromMetaCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\InsertRedirectCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ListCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\RedirectorCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\UpdateCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand;
 
 /**
  * Bootstraps the plugin by registering all hooks and initializing components.
@@ -172,6 +179,47 @@ final class PluginBootstrapper {
 		\WP_CLI::add_command(
 			'wpcom-legacy-redirector export-to-csv',
 			new ExportToCsvCommand()
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector list',
+			new ListCommand()
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector get',
+			new GetCommand( $this->container->inner_repository() )
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector delete',
+			new DeleteCommand( $this->container->manager() )
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector update',
+			new UpdateCommand( $this->container->manager() )
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector enable',
+			new EnableCommand(
+				$this->container->manager(),
+				$this->container->inner_repository()
+			)
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector disable',
+			new DisableCommand(
+				$this->container->manager(),
+				$this->container->inner_repository()
+			)
+		);
+
+		\WP_CLI::add_command(
+			'wpcom-legacy-redirector verify',
+			new VerifyCommand()
 		);
 	}
 }

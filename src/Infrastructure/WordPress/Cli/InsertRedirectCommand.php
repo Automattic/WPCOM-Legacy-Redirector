@@ -47,6 +47,15 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 	 * <to_url>
 	 * : The redirect destination. Can be a full URL, or an integer post ID.
 	 *
+	 * [--status=<status>]
+	 * : The initial status of the redirect.
+	 * ---
+	 * default: enabled
+	 * options:
+	 *   - enabled
+	 *   - disabled
+	 * ---
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Insert redirect from /foo (must not exist) to /bar.
@@ -56,12 +65,17 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 	 *     # Insert redirect from /bar to post ID 5.
 	 *     $ wp wpcom-legacy-redirector insert-redirect bar 5
 	 *
+	 *     # Insert a disabled redirect.
+	 *     $ wp wpcom-legacy-redirector insert-redirect /old /new --status=disabled
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Key-value associative arguments.
 	 */
 	public function __invoke( array $args, array $assoc_args ): void {
-		$from_url = $args[0];
-		$to_value = is_numeric( $args[1] ) ? absint( $args[1] ) : $args[1];
+		$from_url    = $args[0];
+		$to_value    = is_numeric( $args[1] ) ? absint( $args[1] ) : $args[1];
+		$status_flag = $assoc_args['status'] ?? 'enabled';
+		$post_status = 'disabled' === $status_flag ? 'draft' : 'publish';
 
 		try {
 			$source      = SourceUrl::from_string( $from_url );
@@ -93,7 +107,7 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 		}
 
 		// Skip full validation by default to match legacy behavior.
-		$result = $this->manager->create_redirect( $source, $destination, false );
+		$result = $this->manager->create_redirect( $source, $destination, false, $post_status );
 
 		if ( $result->is_error() ) {
 			$error_message = $this->get_friendly_error_message( $result->error_code(), $result->error_message() );
@@ -101,7 +115,8 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 			return;
 		}
 
-		WP_CLI::success( sprintf( 'Inserted %s -> %s', $from_url, $to_value ) );
+		$status_msg = 'disabled' === $status_flag ? ' (disabled)' : '';
+		WP_CLI::success( sprintf( 'Inserted %s -> %s%s', $from_url, $to_value, $status_msg ) );
 	}
 
 	/**
