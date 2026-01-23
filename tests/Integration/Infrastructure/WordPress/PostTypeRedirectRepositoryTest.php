@@ -349,15 +349,15 @@ final class PostTypeRedirectRepositoryTest extends TestCase {
 	 * @covers PostTypeRedirectRepository::save
 	 */
 	public function test_save_updates_existing_redirect(): void {
-		$source              = SourceUrl::from_string( '/save-update-test' );
+		$source               = SourceUrl::from_string( '/save-update-test' );
 		$original_destination = Destination::from_url( DestinationUrl::from_string( 'https://example.com/original' ) );
-		$redirect            = Redirect::create( $source, $original_destination );
+		$redirect             = Redirect::create( $source, $original_destination );
 
-		$saved = $this->repository->save( $redirect );
+		$saved       = $this->repository->save( $redirect );
 		$original_id = $saved->id();
 
 		// Update the destination.
-		$new_destination = Destination::from_url( DestinationUrl::from_string( 'https://example.com/updated' ) );
+		$new_destination  = Destination::from_url( DestinationUrl::from_string( 'https://example.com/updated' ) );
 		$updated_redirect = $saved->with_destination( $new_destination );
 
 		$updated = $this->repository->save( $updated_redirect );

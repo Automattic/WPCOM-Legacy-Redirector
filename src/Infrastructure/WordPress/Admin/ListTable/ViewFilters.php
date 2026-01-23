@@ -88,8 +88,8 @@ final class ViewFilters {
 
 		// "To ID" filter.
 		if ( $counts['post_id'] > 0 ) {
-			$post_id_url        = add_query_arg( 'destination_type', 'post_id', $base_url );
-			$post_id_class      = 'post_id' === $current_dest_type ? 'current' : '';
+			$post_id_url    = add_query_arg( 'destination_type', 'post_id', $base_url );
+			$post_id_class  = 'post_id' === $current_dest_type ? 'current' : '';
 			$views['to_id'] = sprintf(
 				'<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
 				esc_url( $post_id_url ),
@@ -101,8 +101,8 @@ final class ViewFilters {
 
 		// "To Path" filter (internal paths/URLs).
 		if ( $counts['path'] > 0 ) {
-			$path_url        = add_query_arg( 'destination_type', 'path', $base_url );
-			$path_class      = 'path' === $current_dest_type ? 'current' : '';
+			$path_url         = add_query_arg( 'destination_type', 'path', $base_url );
+			$path_class       = 'path' === $current_dest_type ? 'current' : '';
 			$views['to_path'] = sprintf(
 				'<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
 				esc_url( $path_url ),
@@ -114,8 +114,8 @@ final class ViewFilters {
 
 		// "To External" filter.
 		if ( $counts['external'] > 0 ) {
-			$external_url        = add_query_arg( 'destination_type', 'external', $base_url );
-			$external_class      = 'external' === $current_dest_type ? 'current' : '';
+			$external_url         = add_query_arg( 'destination_type', 'external', $base_url );
+			$external_class       = 'external' === $current_dest_type ? 'current' : '';
 			$views['to_external'] = sprintf(
 				'<a href="%s" class="%s">%s <span class="count">(%s)</span></a>',
 				esc_url( $external_url ),

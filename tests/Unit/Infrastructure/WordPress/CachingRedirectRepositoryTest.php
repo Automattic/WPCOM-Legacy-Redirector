@@ -441,7 +441,7 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\CachingRedirectRepository::save
 	 */
 	public function test_save_prewarms_cache_with_new_id(): void {
-		$new_redirect = Redirect::create(
+		$new_redirect   = Redirect::create(
 			SourceUrl::from_string( '/new-source' ),
 			Destination::from_url( DestinationUrl::from_string( '/destination' ) )
 		);
@@ -673,5 +673,4 @@ final class CachingRedirectRepositoryTest extends MonkeyStubs {
 
 		$this->assertSame( 789, $result );
 	}
-
 }

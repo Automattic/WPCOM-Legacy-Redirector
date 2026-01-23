@@ -136,9 +136,11 @@ PHP;
 			return;
 		}
 
+		// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
 		throw new RuntimeException(
 			'Failed to activate WPCOM Legacy Redirector plugin: ' . $this->output . ' ' . $this->error_output
 		);
+		// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 	}
 
 	/**
@@ -158,6 +160,7 @@ PHP;
 		$this->run_wp_cli_command( $command, false );
 
 		if ( 0 !== $this->exit_code ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
 			throw new RuntimeException( 'Failed to create post: ' . $this->output );
 		}
 	}
@@ -192,7 +195,7 @@ PHP;
 	 *
 	 * @Given a CSV file :filename with content:
 	 * @throws RuntimeException If file creation fails.
-	 * @param string $filename The filename to create.
+	 * @param string                           $filename The filename to create.
 	 * @param \Behat\Gherkin\Node\PyStringNode $content The CSV content.
 	 * @return void
 	 */
@@ -214,6 +217,7 @@ PHP;
 		exec( $command, $output, $exit_code );
 
 		if ( 0 !== $exit_code ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
 			throw new RuntimeException( 'Failed to create CSV file: ' . implode( "\n", $output ) );
 		}
 
@@ -255,6 +259,7 @@ PHP;
 		);
 
 		if ( 0 !== $this->exit_code ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
 			throw new RuntimeException( 'Failed to create redirect: ' . $this->output . ' ' . $this->error_output );
 		}
 	}

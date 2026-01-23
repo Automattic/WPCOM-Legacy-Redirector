@@ -146,13 +146,13 @@ final class ColumnsManager {
 	 * @return void
 	 */
 	private function render_to_column( \WP_Post $post ): void {
-		$excerpt = get_the_excerpt( $post->ID );
-		$parent  = $post->post_parent > 0 ? get_post( $post->post_parent ) : null;
+		$excerpt     = get_the_excerpt( $post->ID );
+		$parent_post = $post->post_parent > 0 ? get_post( $post->post_parent ) : null;
 
 		if ( ! empty( $excerpt ) ) {
 			$this->render_excerpt_destination( $excerpt );
 		} else {
-			$this->render_post_id_destination( $post, $parent );
+			$this->render_post_id_destination( $post, $parent_post );
 		}
 	}
 
@@ -211,10 +211,10 @@ final class ColumnsManager {
 	 * Render destination when stored as post_parent (post ID).
 	 *
 	 * @param \WP_Post      $post   The redirect post.
-	 * @param \WP_Post|null $parent The parent post if exists.
+	 * @param \WP_Post|null $parent_post The parent post if exists.
 	 * @return void
 	 */
-	private function render_post_id_destination( \WP_Post $post, ?\WP_Post $parent ): void {
+	private function render_post_id_destination( \WP_Post $post, ?\WP_Post $parent_post ): void {
 		$status = $this->get_parent_status( $post );
 
 		switch ( $status ) {
@@ -222,13 +222,13 @@ final class ColumnsManager {
 				echo '<em>' . esc_html__( 'Redirect is pointing to a Post ID that does not exist.', 'wpcom-legacy-redirector' ) . '</em>';
 				break;
 			case 'private':
-				$permalink     = $parent ? get_permalink( $parent ) : '';
+				$permalink     = $parent_post ? get_permalink( $parent_post ) : '';
 				$relative_path = str_replace( home_url(), '', $permalink );
 				$this->render_relative_path_with_prefix( $relative_path );
 				echo '<br /><em>' . esc_html__( 'Warning: Redirect is not a public URL.', 'wpcom-legacy-redirector' ) . '</em>';
 				break;
 			default:
-				$permalink     = $parent ? get_permalink( $parent ) : '';
+				$permalink     = $parent_post ? get_permalink( $parent_post ) : '';
 				$relative_path = str_replace( home_url(), '', $permalink );
 				$this->render_relative_path_with_prefix( $relative_path );
 		}
@@ -268,17 +268,17 @@ final class ColumnsManager {
 	 * @return string|false Parent post slug if valid, 'private' if not published, false if not found.
 	 */
 	private function get_parent_status( \WP_Post $post ) {
-		$parent = get_post( $post->post_parent );
+		$parent_post = get_post( $post->post_parent );
 
-		if ( ! $parent instanceof \WP_Post ) {
+		if ( ! $parent_post instanceof \WP_Post ) {
 			return false;
 		}
 
-		if ( 'publish' !== $parent->post_status ) {
+		if ( 'publish' !== $parent_post->post_status ) {
 			return 'private';
 		}
 
-		return $parent->post_name;
+		return $parent_post->post_name;
 	}
 
 	/**

@@ -347,7 +347,11 @@ final class RedirectManagerTest extends MonkeyStubs {
 		$this->repository
 			->shouldReceive( 'save' )
 			->twice()
-			->andReturnUsing( function ( $r ) { return $r; } );
+			->andReturnUsing(
+				function ( $r ) {
+					return $r;
+				}
+			);
 
 		$result = $this->manager->bulk_enable( array( 1, 2 ) );
 
@@ -412,7 +416,11 @@ final class RedirectManagerTest extends MonkeyStubs {
 		$this->repository
 			->shouldReceive( 'save' )
 			->times( 3 )
-			->andReturnUsing( function ( $r ) { return $r; } );
+			->andReturnUsing(
+				function ( $r ) {
+					return $r;
+				}
+			);
 
 		$result = $this->manager->bulk_disable( array( 1, 2, 3 ) );
 
@@ -429,8 +437,8 @@ final class RedirectManagerTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectManager::update_destination
 	 */
 	public function test_update_destination_returns_true_on_success(): void {
-		$source         = SourceUrl::from_string( '/old-page' );
-		$redirect       = $this->create_test_redirect( 123, $source, 'publish' );
+		$source          = SourceUrl::from_string( '/old-page' );
+		$redirect        = $this->create_test_redirect( 123, $source, 'publish' );
 		$new_destination = Destination::from_url( DestinationUrl::from_string( '/updated-destination' ) );
 
 		$this->repository

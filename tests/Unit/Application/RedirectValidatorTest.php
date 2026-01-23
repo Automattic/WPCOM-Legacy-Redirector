@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Tests\Unit\Application;
 
+// phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound -- Test file includes testable subclass.
+
 use Automattic\LegacyRedirector\Application\RedirectValidator;
 use Automattic\LegacyRedirector\Domain\Destination;
 use Automattic\LegacyRedirector\Domain\DestinationPostId;
@@ -777,7 +779,7 @@ final class RedirectValidatorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectValidator::validate_for_update
 	 */
 	public function test_validate_for_update_validates_source_destination_different(): void {
-		$existing = Redirect::reconstitute(
+		$existing        = Redirect::reconstitute(
 			123,
 			$this->create_source( '/same-page' ),
 			$this->create_url_destination( '/old-destination' ),
@@ -797,7 +799,7 @@ final class RedirectValidatorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectValidator::validate_for_update
 	 */
 	public function test_validate_for_update_validates_destination(): void {
-		$existing = Redirect::reconstitute(
+		$existing        = Redirect::reconstitute(
 			123,
 			$this->create_source( '/old-page' ),
 			$this->create_url_destination( '/old-destination' ),
@@ -825,7 +827,7 @@ final class RedirectValidatorTest extends MonkeyStubs {
 	 * @covers \Automattic\LegacyRedirector\Application\RedirectValidator::validate_for_update
 	 */
 	public function test_validate_for_update_returns_valid_for_valid_update(): void {
-		$existing = Redirect::reconstitute(
+		$existing        = Redirect::reconstitute(
 			123,
 			$this->create_source( '/old-page' ),
 			$this->create_url_destination( '/old-destination' ),

@@ -185,5 +185,4 @@ final class RedirectStatusTest extends MonkeyStubs {
 			'308' => array( RedirectStatus::PERMANENT_REDIRECT, 'Permanent Redirect' ),
 		);
 	}
-
 }

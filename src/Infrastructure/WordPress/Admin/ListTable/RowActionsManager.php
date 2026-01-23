@@ -62,7 +62,7 @@ final class RowActionsManager {
 
 		// Enable/Disable link based on current status.
 		if ( 'publish' === $post->post_status ) {
-			$disable_link = wp_nonce_url(
+			$disable_link       = wp_nonce_url(
 				add_query_arg(
 					array(
 						'action'      => 'disable_redirect',
@@ -78,7 +78,7 @@ final class RowActionsManager {
 				esc_html__( 'Disable', 'wpcom-legacy-redirector' )
 			);
 		} else {
-			$enable_link = wp_nonce_url(
+			$enable_link       = wp_nonce_url(
 				add_query_arg(
 					array(
 						'action'      => 'enable_redirect',
@@ -96,7 +96,7 @@ final class RowActionsManager {
 		}
 
 		// Validate link (uses AJAX with PHP fallback).
-		$validate_link = wp_nonce_url(
+		$validate_link       = wp_nonce_url(
 			add_query_arg(
 				array(
 					'action' => 'validate',

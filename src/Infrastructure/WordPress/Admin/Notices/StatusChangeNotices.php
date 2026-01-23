@@ -55,6 +55,7 @@ final class StatusChangeNotices {
 		// Bulk redirects enabled.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display.
 		if ( isset( $_GET['bulk_redirects_enabled'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display.
 			$count = absint( $_GET['bulk_redirects_enabled'] );
 			$this->display_bulk_enabled_notice( $count );
 		}
@@ -62,6 +63,7 @@ final class StatusChangeNotices {
 		// Bulk redirects disabled.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display.
 		if ( isset( $_GET['bulk_redirects_disabled'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL param for notice display.
 			$count = absint( $_GET['bulk_redirects_disabled'] );
 			$this->display_bulk_disabled_notice( $count );
 		}

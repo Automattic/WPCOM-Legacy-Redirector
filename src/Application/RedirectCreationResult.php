@@ -77,6 +77,8 @@ final class RedirectCreationResult {
 	 *
 	 * @param ValidationResult $validation The validation result.
 	 * @return self
+	 *
+	 * @throws \InvalidArgumentException If validation is valid (only errors can be converted).
 	 */
 	public static function from_validation( ValidationResult $validation ): self {
 		if ( $validation->is_valid() ) {

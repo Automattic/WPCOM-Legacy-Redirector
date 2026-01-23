@@ -146,6 +146,7 @@ final class RedirectFormPage {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Just checking page for title display.
 		if ( isset( $_GET['page'] ) && 'edit-redirect' === $_GET['page'] && empty( $title ) ) {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Setting page title for admin screen header.
 			$title = __( 'Edit Redirect', 'wpcom-legacy-redirector' );
 		}
 	}
@@ -217,19 +218,18 @@ final class RedirectFormPage {
 			}
 		} else {
 			// Adding new redirect - check for preserved values from validation error.
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading preserved form values for display.
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Reading preserved form values for display.
 			if ( isset( $_GET['redirect_from'] ) ) {
 				$redirect_from = sanitize_text_field( wp_unslash( $_GET['redirect_from'] ) );
 			}
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading preserved form values for display.
 			if ( isset( $_GET['redirect_to'] ) ) {
 				$destination_value   = sanitize_text_field( wp_unslash( $_GET['redirect_to'] ) );
 				$destination_display = $destination_value;
 			}
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading preserved form values for display.
 			if ( isset( $_GET['redirect_status'] ) && in_array( $_GET['redirect_status'], array( 'publish', 'draft' ), true ) ) {
 				$redirect_status = sanitize_text_field( wp_unslash( $_GET['redirect_status'] ) );
 			}
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		}
 
 		// Check for success/error messages.
@@ -560,7 +560,7 @@ final class RedirectFormPage {
 		if ( $destination_validation->is_invalid() ) {
 			$error_code = $destination_validation->error_code();
 			// Map validator error codes to form error codes.
-			$error_map = array(
+			$error_map  = array(
 				'empty-postid' => 'post_not_found',
 				'non-public'   => 'post_not_public',
 				'invalid'      => 'path_not_found',

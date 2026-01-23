@@ -9,6 +9,8 @@
  * @package Automattic\LegacyRedirector
  */
 
+// phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound -- Stubs file with multiple WP class stubs.
+
 // WordPress constants for unit tests.
 if ( ! defined( 'OBJECT' ) ) {
 	define( 'OBJECT', 'OBJECT' );

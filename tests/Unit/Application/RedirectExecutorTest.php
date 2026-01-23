@@ -682,7 +682,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 	 */
 	public function test_maybe_redirect_exits_early_when_request_uri_empty(): void {
 		// Backup and clear REQUEST_URI.
-		$original_request_uri    = $_SERVER['REQUEST_URI'] ?? null;
+		$original_request_uri   = $_SERVER['REQUEST_URI'] ?? null;
 		$_SERVER['REQUEST_URI'] = '';
 
 		Functions\expect( 'is_404' )
@@ -714,7 +714,7 @@ final class RedirectExecutorTest extends MonkeyStubs {
 		$this->stub_home_url();
 
 		// Set REQUEST_URI.
-		$original_request_uri    = $_SERVER['REQUEST_URI'] ?? null;
+		$original_request_uri   = $_SERVER['REQUEST_URI'] ?? null;
 		$_SERVER['REQUEST_URI'] = '/nonexistent-page';
 
 		Functions\expect( 'is_404' )
