@@ -30,7 +30,7 @@
 	<rule ref="PHPCompatibilityWP"/>
 	<!-- For help in understanding this testVersion:
 		https://github.com/PHPCompatibility/PHPCompatibility#sniffing-your-code-for-compatibility-with-specific-php-versions -->
-	<config name="testVersion" value="7.4-"/>
+	<config name="testVersion" value="8.2-"/>
 
 	<!-- Rules: WordPress Coding Standards - see
 		https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
@@ -55,7 +55,9 @@
 		</properties>
 	</rule>
 
+	<!-- PSR-4 naming for src/ directory and tests -->
 	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>src/</exclude-pattern>
 		<exclude-pattern>tests/</exclude-pattern>
 	</rule>
 

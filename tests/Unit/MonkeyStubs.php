@@ -26,7 +26,7 @@ class MonkeyStubs extends YoastTestCase {
 		Monkey\Functions\stubs(
 			array(
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Stubbing WP function with PHP native.
-				'wp_parse_url' => static function ( $url, $component ) {
+				'wp_parse_url' => static function ( $url, $component = -1 ) {
 					return parse_url( $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
 				},
 				'esc_url_raw', // Return 1st param unchanged.

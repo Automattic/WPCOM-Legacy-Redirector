@@ -7,12 +7,23 @@
 
 namespace Automattic\LegacyRedirector\Tests\Integration;
 
+use Automattic\LegacyRedirector\Infrastructure\DI\Container;
 use Yoast\WPTestUtils\WPIntegration\TestCase as WPTestUtilsTestCase;
 
 /**
  * Integrations test testcase class
  */
 abstract class TestCase extends WPTestUtilsTestCase {
+	use RedirectTestHelper;
+
+	/**
+	 * Get the DI container instance.
+	 *
+	 * @return Container The container.
+	 */
+	protected function container(): Container {
+		return Container::instance();
+	}
 
 	/**
 	 * Makes sure the foundational stuff is sorted so tests work.
