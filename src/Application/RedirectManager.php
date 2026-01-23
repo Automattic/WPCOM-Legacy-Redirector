@@ -249,6 +249,72 @@ class RedirectManager {
 	}
 
 	/**
+	 * Delete a redirect by its source URL.
+	 *
+	 * @param SourceUrl $source The source URL.
+	 * @return bool True if deleted, false if not found or deletion failed.
+	 */
+	public function delete_by_source( SourceUrl $source ): bool {
+		$redirect = $this->repository->find_by_source( $source );
+		if ( null === $redirect ) {
+			return false;
+		}
+
+		$deleted = $this->repository->delete( $redirect );
+		if ( $deleted ) {
+			$this->invalidate_cache( $source->hash() );
+		}
+
+		return $deleted;
+	}
+
+	/**
+	 * Delete a redirect by its ID.
+	 *
+	 * @param int $redirect_id The redirect ID.
+	 * @return bool True if deleted, false if not found or deletion failed.
+	 */
+	public function delete_by_id( int $redirect_id ): bool {
+		$redirect = $this->repository->find_by_id( $redirect_id );
+		if ( null === $redirect ) {
+			return false;
+		}
+
+		$deleted = $this->repository->delete( $redirect );
+		if ( $deleted ) {
+			$this->invalidate_cache( $redirect->source()->hash() );
+		}
+
+		return $deleted;
+	}
+
+	/**
+	 * Update a redirect's destination by source URL.
+	 *
+	 * If the redirect exists, updates it. Used for bulk updates via CSV.
+	 *
+	 * @param SourceUrl   $source      The source URL to find.
+	 * @param Destination $destination The new destination.
+	 * @return bool True if updated, false if not found or update failed.
+	 */
+	public function update_by_source( SourceUrl $source, Destination $destination ): bool {
+		$redirect = $this->repository->find_by_source( $source );
+		if ( null === $redirect ) {
+			return false;
+		}
+
+		$updated = $redirect->with_destination( $destination );
+
+		try {
+			$this->repository->save( $updated );
+			$this->invalidate_cache( $source->hash() );
+			return true;
+		} catch ( \Exception $e ) {
+			return false;
+		}
+	}
+
+	/**
 	 * Invalidate the cache for a redirect.
 	 *
 	 * Cache key includes blog ID prefix to ensure multisite isolation.
