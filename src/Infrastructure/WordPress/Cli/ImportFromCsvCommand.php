@@ -43,7 +43,10 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 	 * or --delete to delete redirects matching the sources in the CSV.
 	 *
 	 * CSV should match the following structure:
-	 *   redirect_from_path,(redirect_to_post_id|redirect_to_path|redirect_to_url)
+	 *   redirect_from_path,(redirect_to_post_id|redirect_to_path|redirect_to_url)[,status]
+	 *
+	 * The optional status column can be 'enabled' or 'disabled'. If omitted,
+	 * defaults to 'enabled' for new redirects.
 	 *
 	 * For --delete mode, only the first column (redirect_from_path) is required.
 	 *
@@ -148,6 +151,7 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 			++$row;
 			$redirect_from = $data[0] ?? '';
 			$redirect_to   = $data[1] ?? '';
+			$status        = $data[2] ?? null; // Optional: 'enabled' or 'disabled'.
 
 			if ( empty( $redirect_from ) ) {
 				continue;
@@ -159,7 +163,7 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 				WP_CLI::line( "Processing row $row" );
 			}
 
-			$result = $this->process_row( $redirect_from, $redirect_to, $mode, $validate, $dry_run );
+			$result = $this->process_row( $redirect_from, $redirect_to, $status, $mode, $validate, $dry_run );
 			if ( null !== $result ) {
 				$results[] = $result;
 			}
@@ -181,14 +185,15 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 	/**
 	 * Process a single CSV row.
 	 *
-	 * @param string $redirect_from The source path.
-	 * @param string $redirect_to   The destination.
-	 * @param string $mode          The operation mode (import, update, delete).
-	 * @param bool   $validate      Whether to validate.
-	 * @param bool   $dry_run       Whether this is a dry run.
+	 * @param string      $redirect_from The source path.
+	 * @param string      $redirect_to   The destination.
+	 * @param string|null $status        Optional status ('enabled' or 'disabled').
+	 * @param string      $mode          The operation mode (import, update, delete).
+	 * @param bool        $validate      Whether to validate.
+	 * @param bool        $dry_run       Whether this is a dry run.
 	 * @return array|null Result array or null if nothing to report.
 	 */
-	private function process_row( string $redirect_from, string $redirect_to, string $mode, bool $validate, bool $dry_run ): ?array {
+	private function process_row( string $redirect_from, string $redirect_to, ?string $status, string $mode, bool $validate, bool $dry_run ): ?array {
 		try {
 			$source = SourceUrl::from_string( $redirect_from );
 		} catch ( \InvalidArgumentException $e ) {
@@ -226,11 +231,14 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 			);
 		}
 
+		// Convert status string to post status.
+		$post_status = $this->resolve_status( $status );
+
 		if ( 'update' === $mode ) {
-			return $this->handle_update( $source, $destination, $redirect_from, $redirect_to, $validate, $dry_run );
+			return $this->handle_update( $source, $destination, $redirect_from, $redirect_to, $post_status, $validate, $dry_run );
 		}
 
-		return $this->handle_import( $source, $destination, $redirect_from, $redirect_to, $validate, $dry_run );
+		return $this->handle_import( $source, $destination, $redirect_from, $redirect_to, $post_status, $validate, $dry_run );
 	}
 
 	/**
@@ -268,22 +276,24 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 	 * @param Destination $destination   The destination.
 	 * @param string      $redirect_from The original source string.
 	 * @param string      $redirect_to   The original destination string.
+	 * @param string|null $post_status   The post status ('publish' or 'draft'), or null to preserve existing.
 	 * @param bool        $validate      Whether to validate.
 	 * @param bool        $dry_run       Whether this is a dry run.
 	 * @return array Result array.
 	 */
-	private function handle_update( SourceUrl $source, Destination $destination, string $redirect_from, string $redirect_to, bool $validate, bool $dry_run ): array {
+	private function handle_update( SourceUrl $source, Destination $destination, string $redirect_from, string $redirect_to, ?string $post_status, bool $validate, bool $dry_run ): array {
 		if ( $dry_run ) {
+			$status_msg = $post_status ? " (status: $post_status)" : '';
 			return array(
 				'source'  => $redirect_from,
 				'dest'    => $redirect_to,
 				'action'  => 'would update/create',
-				'message' => 'Would be updated or created',
+				'message' => 'Would be updated or created' . $status_msg,
 			);
 		}
 
 		// Try to update first.
-		$updated = $this->manager->update_by_source( $source, $destination );
+		$updated = $this->manager->update_by_source( $source, $destination, $post_status );
 
 		if ( $updated ) {
 			return array(
@@ -295,7 +305,7 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 		}
 
 		// If not found, create new.
-		$result = $this->manager->create_redirect( $source, $destination, $validate );
+		$result = $this->manager->create_redirect( $source, $destination, $validate, $post_status );
 
 		if ( $result->is_success() ) {
 			return array(
@@ -321,21 +331,23 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 	 * @param Destination $destination   The destination.
 	 * @param string      $redirect_from The original source string.
 	 * @param string      $redirect_to   The original destination string.
+	 * @param string|null $post_status   The post status ('publish' or 'draft'), or null for default (publish).
 	 * @param bool        $validate      Whether to validate.
 	 * @param bool        $dry_run       Whether this is a dry run.
 	 * @return array|null Result array or null for success in non-verbose mode.
 	 */
-	private function handle_import( SourceUrl $source, Destination $destination, string $redirect_from, string $redirect_to, bool $validate, bool $dry_run ): ?array {
+	private function handle_import( SourceUrl $source, Destination $destination, string $redirect_from, string $redirect_to, ?string $post_status, bool $validate, bool $dry_run ): ?array {
 		if ( $dry_run ) {
+			$status_msg = $post_status ? " (status: $post_status)" : '';
 			return array(
 				'source'  => $redirect_from,
 				'dest'    => $redirect_to,
 				'action'  => 'would create',
-				'message' => 'Would be created',
+				'message' => 'Would be created' . $status_msg,
 			);
 		}
 
-		$result = $this->manager->create_redirect( $source, $destination, $validate );
+		$result = $this->manager->create_redirect( $source, $destination, $validate, $post_status );
 
 		if ( $result->is_error() ) {
 			return array(
@@ -397,5 +409,30 @@ final class ImportFromCsvCommand extends WP_CLI_Command {
 		} else {
 			WP_CLI::success( sprintf( 'Processed %d redirects.', count( $results ) ) );
 		}
+	}
+
+	/**
+	 * Resolve status string to post status.
+	 *
+	 * @param string|null $status The status from CSV ('enabled', 'disabled', or null).
+	 * @return string|null Post status ('publish', 'draft') or null if not specified.
+	 */
+	private function resolve_status( ?string $status ): ?string {
+		if ( null === $status || '' === $status ) {
+			return null;
+		}
+
+		$status = strtolower( trim( $status ) );
+
+		if ( 'enabled' === $status || 'publish' === $status ) {
+			return 'publish';
+		}
+
+		if ( 'disabled' === $status || 'draft' === $status ) {
+			return 'draft';
+		}
+
+		// Unknown status - return null to use default.
+		return null;
 	}
 }

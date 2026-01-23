@@ -64,9 +64,10 @@ class RedirectManager {
 	 * @param SourceUrl   $source      The source URL.
 	 * @param Destination $destination The destination.
 	 * @param bool        $validate    Whether to perform full validation (default true).
+	 * @param string|null $status      Optional status ('publish' or 'draft'). Defaults to 'publish'.
 	 * @return RedirectCreationResult The result containing either the redirect ID or validation error.
 	 */
-	public function create_redirect( SourceUrl $source, Destination $destination, bool $validate = true ): RedirectCreationResult {
+	public function create_redirect( SourceUrl $source, Destination $destination, bool $validate = true, ?string $status = null ): RedirectCreationResult {
 		if ( $validate ) {
 			$validation = $this->validator->validate_for_creation( $source, $destination );
 			if ( $validation->is_invalid() ) {
@@ -75,6 +76,11 @@ class RedirectManager {
 		}
 
 		$redirect = Redirect::create( $source, $destination );
+
+		// Apply custom status if provided.
+		if ( null !== $status ) {
+			$redirect = $redirect->with_status( $status );
+		}
 
 		try {
 			$saved = $this->repository->save( $redirect );
@@ -295,15 +301,21 @@ class RedirectManager {
 	 *
 	 * @param SourceUrl   $source      The source URL to find.
 	 * @param Destination $destination The new destination.
+	 * @param string|null $status      Optional new status ('publish' or 'draft'). If null, preserves existing.
 	 * @return bool True if updated, false if not found or update failed.
 	 */
-	public function update_by_source( SourceUrl $source, Destination $destination ): bool {
+	public function update_by_source( SourceUrl $source, Destination $destination, ?string $status = null ): bool {
 		$redirect = $this->repository->find_by_source( $source );
 		if ( null === $redirect ) {
 			return false;
 		}
 
 		$updated = $redirect->with_destination( $destination );
+
+		// Apply status change if provided.
+		if ( null !== $status ) {
+			$updated = $updated->with_status( $status );
+		}
 
 		try {
 			$this->repository->save( $updated );
