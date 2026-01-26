@@ -59,11 +59,10 @@ final class ValidateCommand extends WP_CLI_Command {
 	 * ---
 	 *
 	 * [--check-urls]
-	 * : Also check if URL destinations return 404 (slow, makes HTTP requests).
-	 * : Note: Single redirect validation checks URLs by default; use --no-check-urls to skip.
+	 * : Also check if URL destinations return 404 (slow, makes HTTP requests). Single redirect mode checks URLs by default.
 	 *
 	 * [--no-check-urls]
-	 * : Skip URL checking for single redirect validation (URLs are checked by default in single mode).
+	 * : Skip URL checking for single redirect validation.
 	 *
 	 * [--status=<status>]
 	 * : Only check redirects with this status (batch mode only).
