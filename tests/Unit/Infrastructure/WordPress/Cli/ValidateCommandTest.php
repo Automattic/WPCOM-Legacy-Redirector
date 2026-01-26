@@ -303,7 +303,7 @@ final class ValidateCommandTest extends MonkeyStubs {
 	/**
 	 * Test invoke passes valid post destination.
 	 *
-	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand::__invoke
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
 	 */
 	public function test_invoke_passes_valid_post_destination(): void {
 		$posts = array(
@@ -384,9 +384,10 @@ final class ValidateCommandTest extends MonkeyStubs {
 	/**
 	 * Test invoke shows success when no broken redirects.
 	 *
-	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand::__invoke
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
 	 */
 	public function test_invoke_shows_success_when_all_valid(): void {
+		// URL destinations pass without --check-urls (can't verify without HTTP).
 		$posts = array(
 			$this->create_mock_post(
 				array(
