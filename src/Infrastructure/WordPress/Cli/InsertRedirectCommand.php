@@ -56,6 +56,9 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 	 *   - disabled
 	 * ---
 	 *
+	 * [--skip-validation]
+	 * : Skip destination validation (not recommended).
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Insert redirect from /foo (must not exist) to /bar.
@@ -67,6 +70,9 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 	 *
 	 *     # Insert a disabled redirect.
 	 *     $ wp wpcom-legacy-redirector insert-redirect /old /new --status=disabled
+	 *
+	 *     # Insert without validating the destination exists.
+	 *     $ wp wpcom-legacy-redirector insert-redirect /old /new --skip-validation
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Key-value associative arguments.
@@ -106,8 +112,9 @@ final class InsertRedirectCommand extends WP_CLI_Command {
 			}
 		}
 
-		// Skip full validation by default to match legacy behavior.
-		$result = $this->manager->create_redirect( $source, $destination, false, $post_status );
+		// Validate destination by default (like the UI), unless --skip-validation is used.
+		$validate = ! isset( $assoc_args['skip-validation'] );
+		$result   = $this->manager->create_redirect( $source, $destination, $validate, $post_status );
 
 		if ( $result->is_error() ) {
 			$error_message = $this->get_friendly_error_message( $result->error_code(), $result->error_message() );

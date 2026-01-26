@@ -87,7 +87,7 @@ final class InsertRedirectCommandTest extends MonkeyStubs {
 			->with(
 				Mockery::type( SourceUrl::class ),
 				Mockery::type( Destination::class ),
-				false,
+				true, // Validation is enabled by default.
 				'publish'
 			)
 			->andReturn( RedirectCreationResult::success( 123 ) );
@@ -112,7 +112,7 @@ final class InsertRedirectCommandTest extends MonkeyStubs {
 			->with(
 				Mockery::type( SourceUrl::class ),
 				Mockery::type( Destination::class ),
-				false,
+				true, // Validation is enabled by default.
 				'publish'
 			)
 			->andReturn( RedirectCreationResult::success( 123 ) );
@@ -140,7 +140,7 @@ final class InsertRedirectCommandTest extends MonkeyStubs {
 			->with(
 				Mockery::any(),
 				Mockery::any(),
-				false,
+				true, // Validation is enabled by default.
 				'publish' // Default is enabled (publish).
 			)
 			->andReturn( RedirectCreationResult::success( 123 ) );
@@ -162,7 +162,7 @@ final class InsertRedirectCommandTest extends MonkeyStubs {
 			->with(
 				Mockery::any(),
 				Mockery::any(),
-				false,
+				true, // Validation is enabled by default.
 				'draft' // Disabled maps to draft.
 			)
 			->andReturn( RedirectCreationResult::success( 123 ) );
@@ -186,12 +186,38 @@ final class InsertRedirectCommandTest extends MonkeyStubs {
 			->with(
 				Mockery::any(),
 				Mockery::any(),
-				false,
+				true, // Validation is enabled by default.
 				'publish'
 			)
 			->andReturn( RedirectCreationResult::success( 123 ) );
 
 		$this->command->__invoke( array( '/old-page', '/new-page' ), array( 'status' => 'enabled' ) );
+
+		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
+	}
+
+	// =========================================================================
+	// Tests for --skip-validation flag
+	// =========================================================================
+
+	/**
+	 * Test invoke skips validation when --skip-validation flag is used.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\InsertRedirectCommand::__invoke
+	 */
+	public function test_invoke_skips_validation_when_flag_is_used(): void {
+		$this->manager
+			->shouldReceive( 'create_redirect' )
+			->once()
+			->with(
+				Mockery::any(),
+				Mockery::any(),
+				false, // Validation is skipped.
+				'publish'
+			)
+			->andReturn( RedirectCreationResult::success( 123 ) );
+
+		$this->command->__invoke( array( '/old-page', '/new-page' ), array( 'skip-validation' => true ) );
 
 		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
 	}
