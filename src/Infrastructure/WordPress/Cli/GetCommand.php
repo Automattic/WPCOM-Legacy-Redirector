@@ -75,7 +75,7 @@ final class GetCommand extends WP_CLI_Command {
 	 *     $ wp wpcom-legacy-redirector get 123 --by=id
 	 *
 	 *     # Get just the destination.
-	 *     $ wp wpcom-legacy-redirector get /old-page --field=destination
+	 *     $ wp wpcom-legacy-redirector get /old-page --field=to
 	 *
 	 *     # Get redirect as JSON.
 	 *     $ wp wpcom-legacy-redirector get /old-page --format=json
@@ -108,16 +108,16 @@ final class GetCommand extends WP_CLI_Command {
 		}
 
 		// Build output data.
-		$destination = $redirect->destination();
-		$data        = array(
-			'ID'          => $redirect->id(),
-			'source'      => $redirect->source()->path(),
-			'destination' => $destination->is_post_id()
-				? $destination->as_post_id()->value()
-				: $destination->as_url()->value(),
-			'type'        => $destination->is_post_id() ? 'post' : 'url',
-			'status'      => $redirect->is_active() ? 'enabled' : 'disabled',
-			'hash'        => $redirect->source()->hash(),
+		$dest = $redirect->destination();
+		$data = array(
+			'ID'     => $redirect->id(),
+			'from'   => $redirect->source()->path(),
+			'to'     => $dest->is_post_id()
+				? $dest->as_post_id()->value()
+				: $dest->as_url()->value(),
+			'type'   => $dest->is_post_id() ? 'post' : 'url',
+			'status' => $redirect->is_active() ? 'enabled' : 'disabled',
+			'hash'   => $redirect->source()->hash(),
 		);
 
 		// Return single field if requested.

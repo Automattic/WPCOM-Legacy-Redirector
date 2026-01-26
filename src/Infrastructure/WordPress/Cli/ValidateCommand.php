@@ -1,6 +1,6 @@
 <?php
 /**
- * Verify redirects CLI command.
+ * Validate redirects CLI command.
  *
  * @package Automattic\LegacyRedirector
  */
@@ -14,12 +14,12 @@ use WP_CLI;
 use WP_CLI_Command;
 
 /**
- * Verify redirects for broken destinations.
+ * Validate redirects for broken destinations.
  */
-final class VerifyCommand extends WP_CLI_Command {
+final class ValidateCommand extends WP_CLI_Command {
 
 	/**
-	 * Verify redirects and find broken destinations.
+	 * Validate redirects and find broken destinations.
 	 *
 	 * Checks for:
 	 * - Destinations pointing to deleted or trashed posts
@@ -65,19 +65,19 @@ final class VerifyCommand extends WP_CLI_Command {
 	 * ## EXAMPLES
 	 *
 	 *     # Find broken redirects.
-	 *     $ wp wpcom-legacy-redirector verify
+	 *     $ wp wpcom-legacy-redirector validate
 	 *
 	 *     # Find broken redirects including URL checks.
-	 *     $ wp wpcom-legacy-redirector verify --check-urls
+	 *     $ wp wpcom-legacy-redirector validate --check-urls
 	 *
 	 *     # Find and disable broken redirects.
-	 *     $ wp wpcom-legacy-redirector verify --fix
+	 *     $ wp wpcom-legacy-redirector validate --fix
 	 *
 	 *     # Check all redirects (enabled and disabled).
-	 *     $ wp wpcom-legacy-redirector verify --status=any
+	 *     $ wp wpcom-legacy-redirector validate --status=any
 	 *
 	 *     # Get count of broken redirects.
-	 *     $ wp wpcom-legacy-redirector verify --format=count
+	 *     $ wp wpcom-legacy-redirector validate --format=count
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Key-value associative arguments.
@@ -119,26 +119,26 @@ final class VerifyCommand extends WP_CLI_Command {
 		$checked = 0;
 		$total   = count( $query->posts );
 
-		$progress = \WP_CLI\Utils\make_progress_bar( 'Verifying redirects', $total );
+		$progress = \WP_CLI\Utils\make_progress_bar( 'Validating redirects', $total );
 
 		foreach ( $query->posts as $post ) {
 			++$checked;
 			$progress->tick();
 
-			$source       = $post->post_title;
+			$from         = $post->post_title;
 			$is_post_dest = $post->post_parent > 0;
-			$destination  = $is_post_dest ? $post->post_parent : $post->post_excerpt;
+			$to           = $is_post_dest ? $post->post_parent : $post->post_excerpt;
 
 			$issue = $this->check_redirect( $post, $check_urls );
 
 			if ( null !== $issue ) {
 				$broken[] = array(
-					'ID'          => $post->ID,
-					'source'      => $source,
-					'destination' => $destination,
-					'type'        => $is_post_dest ? 'post' : 'url',
-					'issue'       => $issue,
-					'status'      => 'publish' === $post->post_status ? 'enabled' : 'disabled',
+					'ID'     => $post->ID,
+					'from'   => $from,
+					'to'     => $to,
+					'type'   => $is_post_dest ? 'post' : 'url',
+					'issue'  => $issue,
+					'status' => 'publish' === $post->post_status ? 'enabled' : 'disabled',
 				);
 			}
 
@@ -159,7 +159,7 @@ final class VerifyCommand extends WP_CLI_Command {
 		}
 
 		if ( empty( $broken ) ) {
-			WP_CLI::success( sprintf( 'All %d redirects verified - no issues found.', $checked ) );
+			WP_CLI::success( sprintf( 'All %d redirects validated - no issues found.', $checked ) );
 			return;
 		}
 
@@ -167,7 +167,7 @@ final class VerifyCommand extends WP_CLI_Command {
 		WP_CLI::warning( sprintf( 'Found %d broken redirect(s) out of %d checked.', count( $broken ), $checked ) );
 		WP_CLI::line( '' );
 
-		\WP_CLI\Utils\format_items( $format, $broken, array( 'ID', 'source', 'destination', 'type', 'issue', 'status' ) );
+		\WP_CLI\Utils\format_items( $format, $broken, array( 'ID', 'from', 'to', 'type', 'issue', 'status' ) );
 
 		// Fix if requested.
 		if ( $fix ) {

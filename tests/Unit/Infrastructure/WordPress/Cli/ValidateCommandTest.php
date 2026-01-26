@@ -1,10 +1,10 @@
 <?php
 /**
- * VerifyCommand unit tests.
+ * ValidateCommand unit tests.
  *
  * @package Automattic\LegacyRedirector\Tests\Unit\Infrastructure\WordPress\Cli
  *
- * Note: VerifyCommand directly uses WP_Query and makes HTTP requests, so we use
+ * Note: ValidateCommand directly uses WP_Query and makes HTTP requests, so we use
  * stubs to capture arguments and simulate responses for verification.
  */
 
@@ -12,7 +12,7 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Tests\Unit\Infrastructure\WordPress\Cli;
 
-use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand;
 use Automattic\LegacyRedirector\Tests\Unit\MonkeyStubs;
 use Brain\Monkey\Functions;
 use WP_CLI;
@@ -20,18 +20,18 @@ use WP_Post;
 use WP_Query;
 
 /**
- * VerifyCommandTest class.
+ * ValidateCommandTest class.
  *
- * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand
+ * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand
  */
-final class VerifyCommandTest extends MonkeyStubs {
+final class ValidateCommandTest extends MonkeyStubs {
 
 	/**
 	 * The command under test.
 	 *
-	 * @var VerifyCommand
+	 * @var ValidateCommand
 	 */
-	private VerifyCommand $command;
+	private ValidateCommand $command;
 
 	/**
 	 * Sets up test fixtures.
@@ -41,7 +41,7 @@ final class VerifyCommandTest extends MonkeyStubs {
 	protected function set_up(): void {
 		parent::set_up();
 
-		$this->command = new VerifyCommand();
+		$this->command = new ValidateCommand();
 
 		// Reset WP_CLI and WP_Query trackers.
 		WP_CLI::reset();

@@ -375,8 +375,8 @@ final class ListCommandTest extends MonkeyStubs {
 		// Check the formatted item has correct fields.
 		$item = $format_call[1][0];
 		$this->assertSame( 1, $item['ID'] );
-		$this->assertSame( '/old-page', $item['source'] );
-		$this->assertSame( '/new-page', $item['destination'] );
+		$this->assertSame( '/old-page', $item['from'] );
+		$this->assertSame( '/new-page', $item['to'] );
 		$this->assertSame( 'url', $item['type'] );
 		$this->assertSame( 'enabled', $item['status'] );
 	}
@@ -402,7 +402,7 @@ final class ListCommandTest extends MonkeyStubs {
 
 		$format_call = $GLOBALS['wp_cli_format_items_calls'][0];
 		$item        = $format_call[1][0];
-		$this->assertSame( 456, $item['destination'] );
+		$this->assertSame( 456, $item['to'] );
 		$this->assertSame( 'post', $item['type'] );
 		$this->assertSame( 'disabled', $item['status'] );
 	}

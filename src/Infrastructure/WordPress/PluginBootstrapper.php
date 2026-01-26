@@ -27,7 +27,7 @@ use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\InsertRedirectComma
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ListCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\RedirectorCommand;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\UpdateCommand;
-use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\VerifyCommand;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand;
 
 /**
  * Bootstraps the plugin by registering all hooks and initializing components.
@@ -218,8 +218,8 @@ final class PluginBootstrapper {
 		);
 
 		\WP_CLI::add_command(
-			'wpcom-legacy-redirector verify',
-			new VerifyCommand()
+			'wpcom-legacy-redirector validate',
+			new ValidateCommand()
 		);
 	}
 }

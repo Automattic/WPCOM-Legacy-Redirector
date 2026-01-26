@@ -196,7 +196,7 @@ final class GetCommandTest extends MonkeyStubs {
 			array( '123' ),
 			array(
 				'by'    => 'id',
-				'field' => 'destination',
+				'field' => 'to',
 			)
 		);
 

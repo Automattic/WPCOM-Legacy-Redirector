@@ -179,19 +179,19 @@ final class ListCommand extends WP_CLI_Command {
 		// Build output data.
 		$items = array();
 		foreach ( $posts as $post ) {
-			$destination = $post->post_parent > 0 ? $post->post_parent : $post->post_excerpt;
-			$dest_type   = $post->post_parent > 0 ? 'post' : 'url';
+			$to        = $post->post_parent > 0 ? $post->post_parent : $post->post_excerpt;
+			$dest_type = $post->post_parent > 0 ? 'post' : 'url';
 
 			$items[] = array(
-				'ID'          => $post->ID,
-				'source'      => $post->post_title,
-				'destination' => $destination,
-				'type'        => $dest_type,
-				'status'      => 'publish' === $post->post_status ? 'enabled' : 'disabled',
+				'ID'     => $post->ID,
+				'from'   => $post->post_title,
+				'to'     => $to,
+				'type'   => $dest_type,
+				'status' => 'publish' === $post->post_status ? 'enabled' : 'disabled',
 			);
 		}
 
-		\WP_CLI\Utils\format_items( $format, $items, array( 'ID', 'source', 'destination', 'type', 'status' ) );
+		\WP_CLI\Utils\format_items( $format, $items, array( 'ID', 'from', 'to', 'type', 'status' ) );
 
 		// Show pagination info for table format.
 		if ( 'table' === $format && $query->found_posts > count( $posts ) ) {
