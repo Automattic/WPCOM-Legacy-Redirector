@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Infrastructure\WordPress\Cli;
 
+use Automattic\LegacyRedirector\Domain\RedirectRepositoryInterface;
+use Automattic\LegacyRedirector\Domain\SourceUrl;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\PostType;
 use WP_CLI;
 use WP_CLI_Command;
@@ -17,6 +19,22 @@ use WP_CLI_Command;
  * Validate redirects for broken destinations.
  */
 final class ValidateCommand extends WP_CLI_Command {
+
+	/**
+	 * The redirect repository.
+	 *
+	 * @var RedirectRepositoryInterface|null
+	 */
+	private ?RedirectRepositoryInterface $repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param RedirectRepositoryInterface|null $repository The redirect repository (optional for batch mode).
+	 */
+	public function __construct( ?RedirectRepositoryInterface $repository = null ) {
+		$this->repository = $repository;
+	}
 
 	/**
 	 * Validate redirects and find broken destinations.
@@ -28,11 +46,27 @@ final class ValidateCommand extends WP_CLI_Command {
 	 *
 	 * ## OPTIONS
 	 *
+	 * [<identifier>]
+	 * : Optional source path or redirect ID to validate a single redirect.
+	 *
+	 * [--by=<field>]
+	 * : How to look up the redirect (only used with identifier).
+	 * ---
+	 * default: source
+	 * options:
+	 *   - source
+	 *   - id
+	 * ---
+	 *
 	 * [--check-urls]
 	 * : Also check if URL destinations return 404 (slow, makes HTTP requests).
+	 * : Note: Single redirect validation checks URLs by default; use --no-check-urls to skip.
+	 *
+	 * [--no-check-urls]
+	 * : Skip URL checking for single redirect validation (URLs are checked by default in single mode).
 	 *
 	 * [--status=<status>]
-	 * : Only check redirects with this status.
+	 * : Only check redirects with this status (batch mode only).
 	 * ---
 	 * default: enabled
 	 * options:
@@ -42,7 +76,7 @@ final class ValidateCommand extends WP_CLI_Command {
 	 * ---
 	 *
 	 * [--limit=<number>]
-	 * : Maximum number of redirects to check.
+	 * : Maximum number of redirects to check (batch mode only).
 	 * ---
 	 * default: 1000
 	 * ---
@@ -64,7 +98,13 @@ final class ValidateCommand extends WP_CLI_Command {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Find broken redirects.
+	 *     # Validate a single redirect by source path.
+	 *     $ wp wpcom-legacy-redirector validate /old-page
+	 *
+	 *     # Validate a single redirect by ID.
+	 *     $ wp wpcom-legacy-redirector validate 123 --by=id
+	 *
+	 *     # Find broken redirects (batch mode).
 	 *     $ wp wpcom-legacy-redirector validate
 	 *
 	 *     # Find broken redirects including URL checks.
@@ -83,6 +123,11 @@ final class ValidateCommand extends WP_CLI_Command {
 	 * @param array $assoc_args Key-value associative arguments.
 	 */
 	public function __invoke( array $args, array $assoc_args ): void {
+		// Single redirect validation mode.
+		if ( isset( $args[0] ) ) {
+			$this->validate_single( $args[0], $assoc_args );
+			return;
+		}
 		$check_urls = isset( $assoc_args['check-urls'] );
 		$status     = $assoc_args['status'] ?? 'enabled';
 		$limit      = (int) ( $assoc_args['limit'] ?? 1000 );
@@ -187,6 +232,99 @@ final class ValidateCommand extends WP_CLI_Command {
 				}
 			}
 			WP_CLI::success( sprintf( 'Disabled %d broken redirect(s).', $fixed ) );
+		}
+	}
+
+	/**
+	 * Validate a single redirect by identifier.
+	 *
+	 * @param string $identifier The source path or redirect ID.
+	 * @param array  $assoc_args Key-value associative arguments.
+	 */
+	private function validate_single( string $identifier, array $assoc_args ): void {
+		if ( null === $this->repository ) {
+			WP_CLI::error( 'Repository not available for single redirect validation.' );
+			return;
+		}
+
+		$by  = $assoc_args['by'] ?? 'source';
+		$fix = isset( $assoc_args['fix'] );
+
+		// For single redirect, always check URLs (it's just one request).
+		// User can explicitly disable with --no-check-urls if needed.
+		$check_urls = ! isset( $assoc_args['no-check-urls'] );
+
+		// Find the redirect.
+		if ( 'id' === $by ) {
+			$redirect = $this->repository->find_by_id( (int) $identifier );
+		} else {
+			try {
+				$source   = SourceUrl::from_string( $identifier );
+				$redirect = $this->repository->find_by_source( $source );
+			} catch ( \InvalidArgumentException $e ) {
+				WP_CLI::error( sprintf( 'Invalid source path: %s', $e->getMessage() ) );
+				return;
+			}
+		}
+
+		if ( null === $redirect ) {
+			WP_CLI::error( sprintf( 'Redirect not found: %s', $identifier ) );
+			return;
+		}
+
+		// Get the underlying post for validation.
+		$post = get_post( $redirect->id() );
+		if ( null === $post ) {
+			WP_CLI::error( sprintf( 'Redirect post not found: %d', $redirect->id() ) );
+			return;
+		}
+
+		$issue = $this->check_redirect( $post, $check_urls );
+
+		$dest        = $redirect->destination();
+		$is_post_id  = $dest->is_post_id();
+		$destination = $is_post_id ? $dest->as_post_id()->value() : $dest->as_url()->value();
+
+		if ( null === $issue ) {
+			WP_CLI::success(
+				sprintf(
+					'Redirect %d is valid: %s → %s',
+					$redirect->id(),
+					$redirect->source()->path(),
+					$destination
+				)
+			);
+			return;
+		}
+
+		// Has an issue.
+		WP_CLI::warning(
+			sprintf(
+				'Redirect %d has issue: %s',
+				$redirect->id(),
+				$issue
+			)
+		);
+
+		WP_CLI::line( sprintf( '  From: %s', $redirect->source()->path() ) );
+		WP_CLI::line( sprintf( '  To: %s', $destination ) );
+		WP_CLI::line( sprintf( '  Type: %s', $is_post_id ? 'post' : 'url' ) );
+		WP_CLI::line( sprintf( '  Status: %s', $redirect->is_active() ? 'enabled' : 'disabled' ) );
+		WP_CLI::line( sprintf( '  Issue: %s', $issue ) );
+
+		// Fix if requested.
+		if ( $fix && $redirect->is_active() ) {
+			$result = wp_update_post(
+				array(
+					'ID'          => $redirect->id(),
+					'post_status' => 'draft',
+				)
+			);
+			if ( $result && ! is_wp_error( $result ) ) {
+				WP_CLI::success( 'Redirect disabled.' );
+			} else {
+				WP_CLI::error( 'Failed to disable redirect.' );
+			}
 		}
 	}
 

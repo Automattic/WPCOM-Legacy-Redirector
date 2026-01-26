@@ -12,9 +12,16 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Tests\Unit\Infrastructure\WordPress\Cli;
 
+use Automattic\LegacyRedirector\Domain\Destination;
+use Automattic\LegacyRedirector\Domain\DestinationPostId;
+use Automattic\LegacyRedirector\Domain\DestinationUrl;
+use Automattic\LegacyRedirector\Domain\Redirect;
+use Automattic\LegacyRedirector\Domain\RedirectRepositoryInterface;
+use Automattic\LegacyRedirector\Domain\SourceUrl;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand;
 use Automattic\LegacyRedirector\Tests\Unit\MonkeyStubs;
 use Brain\Monkey\Functions;
+use Mockery;
 use WP_CLI;
 use WP_Post;
 use WP_Query;
@@ -572,5 +579,335 @@ final class ValidateCommandTest extends MonkeyStubs {
 
 		$this->assertNotNull( WP_Query::$last_args );
 		$this->assertSame( 'vip-legacy-redirect', WP_Query::$last_args['post_type'] );
+	}
+
+	// =========================================================================
+	// Tests for single redirect validation mode
+	// =========================================================================
+
+	/**
+	 * Test invoke validates single redirect by source path.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_validates_single_redirect_by_source(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_url( DestinationUrl::from_string( '/new-page' ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		$repository
+			->shouldReceive( 'find_by_source' )
+			->once()
+			->andReturn( $redirect );
+
+		// Mock get_post to return a valid redirect post.
+		$post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '/new-page',
+				'post_parent'  => 0,
+				'post_status'  => 'publish',
+			)
+		);
+		Functions\when( 'get_post' )->justReturn( $post );
+
+		// Single mode checks URLs by default, mock successful response.
+		Functions\when( 'wp_remote_head' )->justReturn( array() );
+		Functions\when( 'wp_remote_retrieve_response_code' )->justReturn( 200 );
+		Functions\when( 'is_wp_error' )->justReturn( false );
+
+		$command->__invoke( array( '/old-page' ), array() );
+
+		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
+		$success_call = WP_CLI::get_call( 'success' );
+		$this->assertStringContainsString( 'valid', $success_call[1] );
+	}
+
+	/**
+	 * Test invoke validates single redirect by ID.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_validates_single_redirect_by_id(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_post_id( DestinationPostId::from_int( 456 ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		$repository
+			->shouldReceive( 'find_by_id' )
+			->once()
+			->with( 123 )
+			->andReturn( $redirect );
+
+		// Mock get_post to return redirect post and valid destination.
+		$redirect_post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '',
+				'post_parent'  => 456,
+				'post_status'  => 'publish',
+			)
+		);
+		$dest_post     = $this->create_mock_post( array( 'post_status' => 'publish' ) );
+		Functions\when( 'get_post' )->alias(
+			function ( $id ) use ( $redirect_post, $dest_post ) {
+				return 123 === $id ? $redirect_post : $dest_post;
+			}
+		);
+
+		$command->__invoke( array( '123' ), array( 'by' => 'id' ) );
+
+		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
+		$success_call = WP_CLI::get_call( 'success' );
+		$this->assertStringContainsString( 'valid', $success_call[1] );
+	}
+
+	/**
+	 * Test invoke shows error when single redirect not found by source.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_shows_error_when_not_found(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$repository
+			->shouldReceive( 'find_by_source' )
+			->once()
+			->andReturn( null );
+
+		$command->__invoke( array( '/nonexistent' ), array() );
+
+		$this->assertTrue( WP_CLI::was_called( 'error' ), 'WP_CLI::error should have been called' );
+		$error_call = WP_CLI::get_call( 'error' );
+		$this->assertStringContainsString( 'not found', $error_call[1] );
+	}
+
+	/**
+	 * Test invoke shows error for invalid source path in single mode.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_shows_error_for_invalid_source(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$repository->shouldNotReceive( 'find_by_source' );
+
+		// Empty string should fail SourceUrl validation.
+		$command->__invoke( array( '' ), array() );
+
+		$this->assertTrue( WP_CLI::was_called( 'error' ), 'WP_CLI::error should have been called' );
+		$error_call = WP_CLI::get_call( 'error' );
+		$this->assertStringContainsString( 'Invalid source path', $error_call[1] );
+	}
+
+	/**
+	 * Test invoke shows warning for broken single redirect.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_shows_warning_for_broken_redirect(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_post_id( DestinationPostId::from_int( 999 ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		$repository
+			->shouldReceive( 'find_by_id' )
+			->andReturn( $redirect );
+
+		// Mock get_post: redirect exists, but destination deleted.
+		$redirect_post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '',
+				'post_parent'  => 999,
+				'post_status'  => 'publish',
+			)
+		);
+		Functions\when( 'get_post' )->alias(
+			function ( $id ) use ( $redirect_post ) {
+				return 123 === $id ? $redirect_post : null;
+			}
+		);
+
+		$command->__invoke( array( '123' ), array( 'by' => 'id' ) );
+
+		$this->assertTrue( WP_CLI::was_called( 'warning' ), 'WP_CLI::warning should have been called' );
+		$warning_call = WP_CLI::get_call( 'warning' );
+		$this->assertStringContainsString( 'issue', $warning_call[1] );
+	}
+
+	/**
+	 * Test invoke fixes single broken redirect when --fix is used.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_fixes_broken_redirect(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_post_id( DestinationPostId::from_int( 999 ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		$repository
+			->shouldReceive( 'find_by_id' )
+			->andReturn( $redirect );
+
+		// Mock get_post: redirect exists, but destination deleted.
+		$redirect_post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '',
+				'post_parent'  => 999,
+				'post_status'  => 'publish',
+			)
+		);
+		Functions\when( 'get_post' )->alias(
+			function ( $id ) use ( $redirect_post ) {
+				return 123 === $id ? $redirect_post : null;
+			}
+		);
+
+		// Track wp_update_post calls.
+		$update_calls = array();
+		Functions\when( 'wp_update_post' )->alias(
+			function ( $args ) use ( &$update_calls ) {
+				$update_calls[] = $args;
+				return $args['ID'];
+			}
+		);
+
+		$command->__invoke(
+			array( '123' ),
+			array(
+				'by'  => 'id',
+				'fix' => true,
+			)
+		);
+
+		$this->assertNotEmpty( $update_calls, 'wp_update_post should have been called' );
+		$this->assertSame( 123, $update_calls[0]['ID'] );
+		$this->assertSame( 'draft', $update_calls[0]['post_status'] );
+
+		// Should show success for the fix.
+		$success_calls = WP_CLI::get_calls( 'success' );
+		$last_success  = end( $success_calls );
+		$this->assertStringContainsString( 'disabled', strtolower( $last_success[1] ) );
+	}
+
+	/**
+	 * Test invoke single defaults to source lookup.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_defaults_to_source_lookup(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_url( DestinationUrl::from_string( '/new-page' ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		// Should use find_by_source when no --by flag.
+		$repository
+			->shouldReceive( 'find_by_source' )
+			->once()
+			->andReturn( $redirect );
+
+		$post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '/new-page',
+				'post_parent'  => 0,
+				'post_status'  => 'publish',
+			)
+		);
+		Functions\when( 'get_post' )->justReturn( $post );
+
+		// Single mode checks URLs by default, mock successful response.
+		Functions\when( 'wp_remote_head' )->justReturn( array() );
+		Functions\when( 'wp_remote_retrieve_response_code' )->justReturn( 200 );
+		Functions\when( 'is_wp_error' )->justReturn( false );
+
+		$command->__invoke( array( '/old-page' ), array() );
+
+		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
+	}
+
+	/**
+	 * Test invoke single respects --no-check-urls flag.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_respects_no_check_urls_flag(): void {
+		$repository = Mockery::mock( RedirectRepositoryInterface::class );
+		$command    = new ValidateCommand( $repository );
+
+		$source      = SourceUrl::from_string( '/old-page' );
+		$destination = Destination::from_url( DestinationUrl::from_string( '/new-page' ) );
+		$redirect    = Redirect::reconstitute( 123, $source, $destination, 'publish' );
+
+		$repository
+			->shouldReceive( 'find_by_source' )
+			->once()
+			->andReturn( $redirect );
+
+		$post = $this->create_mock_post(
+			array(
+				'ID'           => 123,
+				'post_title'   => '/old-page',
+				'post_excerpt' => '/new-page',
+				'post_parent'  => 0,
+				'post_status'  => 'publish',
+			)
+		);
+		Functions\when( 'get_post' )->justReturn( $post );
+
+		// With --no-check-urls, URL destination should pass without HTTP check.
+		// wp_remote_head should NOT be called.
+		$http_called = false;
+		Functions\when( 'wp_remote_head' )->alias(
+			function () use ( &$http_called ) {
+				$http_called = true;
+				return array();
+			}
+		);
+
+		$command->__invoke( array( '/old-page' ), array( 'no-check-urls' => true ) );
+
+		$this->assertFalse( $http_called, 'wp_remote_head should not be called with --no-check-urls' );
+		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
+	}
+
+	/**
+	 * Test invoke single shows error without repository.
+	 *
+	 * @covers \Automattic\LegacyRedirector\Infrastructure\WordPress\Cli\ValidateCommand::__invoke
+	 */
+	public function test_invoke_single_shows_error_without_repository(): void {
+		// Command without repository (batch mode only).
+		$command = new ValidateCommand();
+
+		$command->__invoke( array( '/old-page' ), array() );
+
+		$this->assertTrue( WP_CLI::was_called( 'error' ), 'WP_CLI::error should have been called' );
+		$error_call = WP_CLI::get_call( 'error' );
+		$this->assertStringContainsString( 'Repository not available', $error_call[1] );
 	}
 }
