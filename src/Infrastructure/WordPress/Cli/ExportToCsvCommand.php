@@ -44,6 +44,12 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 	 * [--overwrite]
 	 * : Whether to overwrite an existing file. Defaults to false.
 	 *
+	 * [--broken-only]
+	 * : Only export redirects with broken destinations.
+	 *
+	 * [--check-urls]
+	 * : When using --broken-only, also check URL destinations via HTTP.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Export all redirects to a CSV file.
@@ -55,6 +61,12 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 	 *     # Export only disabled redirects.
 	 *     $ wp wpcom-legacy-redirector export-to-csv --csv=path/to/redirects.csv --status=disabled
 	 *
+	 *     # Export only broken redirects.
+	 *     $ wp wpcom-legacy-redirector export-to-csv --csv=path/to/redirects.csv --broken-only
+	 *
+	 *     # Export broken redirects, including URL destination checks.
+	 *     $ wp wpcom-legacy-redirector export-to-csv --csv=path/to/redirects.csv --broken-only --check-urls
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Key-value associative arguments.
 	 */
@@ -62,6 +74,8 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 		$filename      = $assoc_args['csv'] ?? false;
 		$overwrite     = isset( $assoc_args['overwrite'] ) ? (bool) $assoc_args['overwrite'] : false;
 		$status_filter = $assoc_args['status'] ?? 'any';
+		$broken_only   = isset( $assoc_args['broken-only'] );
+		$check_urls    = isset( $assoc_args['check-urls'] );
 
 		if ( ! $filename ) {
 			WP_CLI::error( 'Invalid CSV file!' );
@@ -100,7 +114,12 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 			$post_count = $counts[ $post_status ] ?? 0;
 		}
 
-		$progress = \WP_CLI\Utils\make_progress_bar( 'Exporting ' . number_format( $post_count ) . ' redirects', $post_count );
+		$label = $broken_only ? 'Scanning ' : 'Exporting ';
+		if ( $broken_only && $check_urls ) {
+			WP_CLI::warning( 'URL checking enabled - this may be slow.' );
+		}
+
+		$progress = \WP_CLI\Utils\make_progress_bar( $label . number_format( $post_count ) . ' redirects', $post_count );
 		$output   = array();
 
 		do {
@@ -117,6 +136,14 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 			);
 
 			foreach ( $posts as $post ) {
+				// If broken-only mode, check if the redirect is broken.
+				if ( $broken_only ) {
+					$issue = $this->check_redirect( $post, $check_urls );
+					if ( null === $issue ) {
+						continue; // Skip valid redirects.
+					}
+				}
+
 				$redirect_from = $post->post_title;
 				$redirect_to   = ( $post->post_parent && 0 !== $post->post_parent ) ? $post->post_parent : $post->post_excerpt;
 				$status        = 'publish' === $post->post_status ? 'enabled' : 'disabled';
@@ -134,8 +161,134 @@ final class ExportToCsvCommand extends WP_CLI_Command {
 
 		$progress->finish();
 
+		if ( $broken_only ) {
+			WP_CLI::line( sprintf( 'Found %d broken redirects.', count( $output ) ) );
+		}
+
 		\WP_CLI\Utils\write_csv( $file_descriptor, $output );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CLI command, WP_Filesystem not appropriate.
 		fclose( $file_descriptor );
+	}
+
+	/**
+	 * Check a redirect for issues.
+	 *
+	 * @param \WP_Post $post       The redirect post.
+	 * @param bool     $check_urls Whether to check URL destinations via HTTP.
+	 * @return string|null The issue description, or null if valid.
+	 */
+	private function check_redirect( \WP_Post $post, bool $check_urls ): ?string {
+		$is_post_dest = $post->post_parent > 0;
+
+		if ( $is_post_dest ) {
+			return $this->check_post_destination( $post->post_parent );
+		}
+
+		// URL destination.
+		$url = $post->post_excerpt;
+
+		if ( empty( $url ) ) {
+			return 'Empty destination';
+		}
+
+		// Check if it's a relative path.
+		if ( ! preg_match( '#^https?://#i', $url ) ) {
+			return $this->check_relative_path( $url, $check_urls );
+		}
+
+		// External URL - only check if requested.
+		if ( $check_urls ) {
+			return $this->check_url( $url );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Check if a post destination is valid.
+	 *
+	 * @param int $post_id The post ID.
+	 * @return string|null The issue, or null if valid.
+	 */
+	private function check_post_destination( int $post_id ): ?string {
+		$post = get_post( $post_id );
+
+		if ( null === $post ) {
+			return 'Post deleted';
+		}
+
+		if ( 'trash' === $post->post_status ) {
+			return 'Post trashed';
+		}
+
+		if ( 'publish' !== $post->post_status ) {
+			return 'Post not published';
+		}
+
+		return null;
+	}
+
+	/**
+	 * Check if a relative path destination is valid.
+	 *
+	 * @param string $path       The relative path.
+	 * @param bool   $check_urls Whether to check via HTTP.
+	 * @return string|null The issue, or null if valid.
+	 */
+	private function check_relative_path( string $path, bool $check_urls ): ?string {
+		// Try to find a post by path.
+		$post = get_page_by_path( ltrim( $path, '/' ), OBJECT, array( 'post', 'page' ) );
+
+		if ( null !== $post ) {
+			if ( 'trash' === $post->post_status ) {
+				return 'Destination page trashed';
+			}
+			if ( 'publish' !== $post->post_status ) {
+				return 'Destination page not published';
+			}
+			return null;
+		}
+
+		// If URL checking is enabled, verify via HTTP.
+		if ( $check_urls ) {
+			$full_url = home_url( $path );
+			return $this->check_url( $full_url );
+		}
+
+		// Can't determine without HTTP check.
+		return null;
+	}
+
+	/**
+	 * Check if a URL returns a successful response.
+	 *
+	 * @param string $url The URL to check.
+	 * @return string|null The issue, or null if valid.
+	 */
+	private function check_url( string $url ): ?string {
+		$response = wp_remote_head(
+			$url,
+			array(
+				'timeout'     => 5,
+				'redirection' => 0,
+				'sslverify'   => false,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return 'Request failed';
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		if ( 404 === $status_code ) {
+			return 'Destination returns 404';
+		}
+
+		if ( $status_code >= 500 ) {
+			return 'Destination returns error';
+		}
+
+		return null;
 	}
 }
