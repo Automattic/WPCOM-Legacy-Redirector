@@ -159,9 +159,10 @@ final class ValidateCommand extends WP_CLI_Command {
 			)
 		);
 
-		$broken  = array();
-		$checked = 0;
-		$total   = count( $query->posts );
+		$broken     = array();
+		$checked    = 0;
+		$total      = count( $query->posts );
+		$start_time = microtime( true );
 
 		$progress = \WP_CLI\Utils\make_progress_bar( 'Validating redirects', $total );
 
@@ -196,19 +197,28 @@ final class ValidateCommand extends WP_CLI_Command {
 
 		$progress->finish();
 
+		// Calculate elapsed time.
+		$elapsed      = microtime( true ) - $start_time;
+		$elapsed_str  = $this->format_elapsed_time( $elapsed );
+		$rate         = $checked > 0 && $elapsed > 0 ? round( $checked / $elapsed, 1 ) : 0;
+		$broken_count = count( $broken );
+
 		// Handle count format.
 		if ( 'count' === $format ) {
-			WP_CLI::line( (string) count( $broken ) );
+			WP_CLI::line( (string) $broken_count );
 			return;
 		}
 
+		// Show progress summary.
+		WP_CLI::line( sprintf( 'Checked %d redirects in %s (%.1f/sec)', $checked, $elapsed_str, $rate ) );
+
 		if ( empty( $broken ) ) {
-			WP_CLI::success( sprintf( 'All %d redirects validated - no issues found.', $checked ) );
+			WP_CLI::success( 'No issues found.' );
 			return;
 		}
 
 		// Display results.
-		WP_CLI::warning( sprintf( 'Found %d broken redirect(s) out of %d checked.', count( $broken ), $checked ) );
+		WP_CLI::warning( sprintf( 'Found %d broken redirect(s).', $broken_count ) );
 		WP_CLI::line( '' );
 
 		\WP_CLI\Utils\format_items( $format, $broken, array( 'ID', 'from', 'to', 'type', 'issue', 'status' ) );
@@ -457,5 +467,29 @@ final class ValidateCommand extends WP_CLI_Command {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Format elapsed time into a human-readable string.
+	 *
+	 * @param float $seconds The elapsed time in seconds.
+	 * @return string Formatted time string.
+	 */
+	private function format_elapsed_time( float $seconds ): string {
+		if ( $seconds < 60 ) {
+			return sprintf( '%.1fs', $seconds );
+		}
+
+		$minutes = floor( $seconds / 60 );
+		$secs    = $seconds - ( $minutes * 60 );
+
+		if ( $minutes < 60 ) {
+			return sprintf( '%dm %.1fs', $minutes, $secs );
+		}
+
+		$hours = floor( $minutes / 60 );
+		$mins  = $minutes - ( $hours * 60 );
+
+		return sprintf( '%dh %dm %.1fs', $hours, $mins, $secs );
 	}
 }

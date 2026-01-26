@@ -335,7 +335,7 @@ final class ValidateCommandTest extends MonkeyStubs {
 		// No broken redirects found.
 		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
 		$success_call = WP_CLI::get_call( 'success' );
-		$this->assertStringContainsString( 'no issues found', $success_call[1] );
+		$this->assertStringContainsString( 'No issues found', $success_call[1] );
 	}
 
 	// =========================================================================
@@ -412,7 +412,7 @@ final class ValidateCommandTest extends MonkeyStubs {
 
 		$this->assertTrue( WP_CLI::was_called( 'success' ), 'WP_CLI::success should have been called' );
 		$success_call = WP_CLI::get_call( 'success' );
-		$this->assertStringContainsString( 'no issues found', $success_call[1] );
+		$this->assertStringContainsString( 'No issues found', $success_call[1] );
 	}
 
 	/**
