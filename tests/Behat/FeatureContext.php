@@ -277,4 +277,36 @@ PHP;
 		// This step is handled by the base class or WP-CLI Behat framework.
 		// Kept here for documentation purposes.
 	}
+
+	/**
+	 * Move a post to the trash.
+	 *
+	 * @Given the post :post_name is trashed
+	 * @throws RuntimeException If the post cannot be trashed.
+	 * @param string $post_name The post slug.
+	 * @return void
+	 */
+	public function the_post_is_trashed( string $post_name ): void {
+		// Get post ID by slug.
+		$command = sprintf(
+			"post list --post_name='%s' --field=ID --post_status=any",
+			$post_name
+		);
+		$this->run_wp_cli_command( $command, false );
+
+		if ( 0 !== $this->exit_code || empty( trim( $this->output ) ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
+			throw new RuntimeException( 'Could not find post to trash: ' . $post_name );
+		}
+
+		$post_id = trim( $this->output );
+
+		// Move post to trash.
+		$this->run_wp_cli_command( "post update {$post_id} --post_status=trash", false );
+
+		if ( 0 !== $this->exit_code ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages don't require escaping.
+			throw new RuntimeException( 'Failed to trash post: ' . $this->output );
+		}
+	}
 }

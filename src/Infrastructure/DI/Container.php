@@ -12,8 +12,10 @@ namespace Automattic\LegacyRedirector\Infrastructure\DI;
 use Automattic\LegacyRedirector\Application\RedirectExecutor;
 use Automattic\LegacyRedirector\Application\RedirectManager;
 use Automattic\LegacyRedirector\Application\RedirectValidator;
+use Automattic\LegacyRedirector\Domain\RedirectQueryRepositoryInterface;
 use Automattic\LegacyRedirector\Domain\RedirectRepositoryInterface;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\CachingRedirectRepository;
+use Automattic\LegacyRedirector\Infrastructure\WordPress\PostTypeRedirectQueryRepository;
 use Automattic\LegacyRedirector\Infrastructure\WordPress\PostTypeRedirectRepository;
 
 /**
@@ -128,5 +130,17 @@ final class Container {
 			$this->services['manager'] = new RedirectManager( $this->inner_repository() );
 		}
 		return $this->services['manager'];
+	}
+
+	/**
+	 * Get the redirect query repository for listing operations.
+	 *
+	 * @return RedirectQueryRepositoryInterface
+	 */
+	public function query_repository(): RedirectQueryRepositoryInterface {
+		if ( ! isset( $this->services['query_repository'] ) ) {
+			$this->services['query_repository'] = new PostTypeRedirectQueryRepository();
+		}
+		return $this->services['query_repository'];
 	}
 }

@@ -9,9 +9,12 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Infrastructure\WordPress\Cli;
 
+use Automattic\LegacyRedirector\Application\RedirectValidator;
+use Automattic\LegacyRedirector\Domain\RedirectCriteria;
+use Automattic\LegacyRedirector\Domain\RedirectQueryRepositoryInterface;
 use Automattic\LegacyRedirector\Domain\RedirectRepositoryInterface;
 use Automattic\LegacyRedirector\Domain\SourceUrl;
-use Automattic\LegacyRedirector\Infrastructure\WordPress\PostType;
+use Automattic\LegacyRedirector\Domain\ValidationIssue;
 use WP_CLI;
 use WP_CLI_Command;
 
@@ -21,19 +24,41 @@ use WP_CLI_Command;
 final class ValidateCommand extends WP_CLI_Command {
 
 	/**
-	 * The redirect repository.
+	 * The redirect repository (for single redirect lookups).
 	 *
 	 * @var RedirectRepositoryInterface|null
 	 */
 	private ?RedirectRepositoryInterface $repository;
 
 	/**
+	 * The query repository (for batch listing).
+	 *
+	 * @var RedirectQueryRepositoryInterface|null
+	 */
+	private ?RedirectQueryRepositoryInterface $query_repository;
+
+	/**
+	 * The redirect validator.
+	 *
+	 * @var RedirectValidator|null
+	 */
+	private ?RedirectValidator $validator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RedirectRepositoryInterface|null $repository The redirect repository (optional for batch mode).
+	 * @param RedirectRepositoryInterface|null      $repository       The redirect repository (for single lookups).
+	 * @param RedirectQueryRepositoryInterface|null $query_repository The query repository (for batch operations).
+	 * @param RedirectValidator|null                $validator        The redirect validator.
 	 */
-	public function __construct( ?RedirectRepositoryInterface $repository = null ) {
-		$this->repository = $repository;
+	public function __construct(
+		?RedirectRepositoryInterface $repository = null,
+		?RedirectQueryRepositoryInterface $query_repository = null,
+		?RedirectValidator $validator = null
+	) {
+		$this->repository       = $repository;
+		$this->query_repository = $query_repository;
+		$this->validator        = $validator;
 	}
 
 	/**
@@ -127,121 +152,8 @@ final class ValidateCommand extends WP_CLI_Command {
 			$this->validate_single( $args[0], $assoc_args );
 			return;
 		}
-		$check_urls = isset( $assoc_args['check-urls'] );
-		$status     = $assoc_args['status'] ?? 'enabled';
-		$limit      = (int) ( $assoc_args['limit'] ?? 1000 );
-		$fix        = isset( $assoc_args['fix'] );
-		$format     = $assoc_args['format'] ?? 'table';
 
-		// Map status filter to post status.
-		$post_status = 'any';
-		if ( 'enabled' === $status ) {
-			$post_status = 'publish';
-		} elseif ( 'disabled' === $status ) {
-			$post_status = 'draft';
-		} else {
-			$post_status = array( 'publish', 'draft' );
-		}
-
-		WP_CLI::line( sprintf( 'Checking up to %d redirects...', $limit ) );
-		if ( $check_urls ) {
-			WP_CLI::warning( 'URL checking enabled - this may be slow.' );
-		}
-
-		// Query redirects.
-		$query = new \WP_Query(
-			array(
-				'post_type'      => PostType::POST_TYPE,
-				'post_status'    => $post_status,
-				'posts_per_page' => $limit,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-			)
-		);
-
-		$broken     = array();
-		$checked    = 0;
-		$total      = count( $query->posts );
-		$start_time = microtime( true );
-
-		$progress = \WP_CLI\Utils\make_progress_bar( 'Validating redirects', $total );
-
-		foreach ( $query->posts as $post ) {
-			++$checked;
-			$progress->tick();
-
-			$from         = $post->post_title;
-			$is_post_dest = $post->post_parent > 0;
-			$to           = $is_post_dest ? $post->post_parent : $post->post_excerpt;
-
-			$issue = $this->check_redirect( $post, $check_urls );
-
-			if ( null !== $issue ) {
-				$broken[] = array(
-					'ID'     => $post->ID,
-					'from'   => $from,
-					'to'     => $to,
-					'type'   => $is_post_dest ? 'post' : 'url',
-					'issue'  => $issue,
-					'status' => 'publish' === $post->post_status ? 'enabled' : 'disabled',
-				);
-			}
-
-			// Memory cleanup every 100 items.
-			if ( 0 === $checked % 100 ) {
-				if ( function_exists( 'stop_the_insanity' ) ) {
-					stop_the_insanity();
-				}
-			}
-		}
-
-		$progress->finish();
-
-		// Calculate elapsed time.
-		$elapsed      = microtime( true ) - $start_time;
-		$elapsed_str  = $this->format_elapsed_time( $elapsed );
-		$rate         = $checked > 0 && $elapsed > 0 ? round( $checked / $elapsed, 1 ) : 0;
-		$broken_count = count( $broken );
-
-		// Handle count format.
-		if ( 'count' === $format ) {
-			WP_CLI::line( (string) $broken_count );
-			return;
-		}
-
-		// Show progress summary.
-		WP_CLI::line( sprintf( 'Checked %d redirects in %s (%.1f/sec)', $checked, $elapsed_str, $rate ) );
-
-		if ( empty( $broken ) ) {
-			WP_CLI::success( 'No issues found.' );
-			return;
-		}
-
-		// Display results.
-		WP_CLI::warning( sprintf( 'Found %d broken redirect(s).', $broken_count ) );
-		WP_CLI::line( '' );
-
-		\WP_CLI\Utils\format_items( $format, $broken, array( 'ID', 'from', 'to', 'type', 'issue', 'status' ) );
-
-		// Fix if requested.
-		if ( $fix ) {
-			WP_CLI::line( '' );
-			$fixed = 0;
-			foreach ( $broken as $item ) {
-				if ( 'enabled' === $item['status'] ) {
-					$result = wp_update_post(
-						array(
-							'ID'          => $item['ID'],
-							'post_status' => 'draft',
-						)
-					);
-					if ( $result && ! is_wp_error( $result ) ) {
-						++$fixed;
-					}
-				}
-			}
-			WP_CLI::success( sprintf( 'Disabled %d broken redirect(s).', $fixed ) );
-		}
+		$this->validate_batch_mode( $assoc_args );
 	}
 
 	/**
@@ -251,8 +163,8 @@ final class ValidateCommand extends WP_CLI_Command {
 	 * @param array  $assoc_args Key-value associative arguments.
 	 */
 	private function validate_single( string $identifier, array $assoc_args ): void {
-		if ( null === $this->repository ) {
-			WP_CLI::error( 'Repository not available for single redirect validation.' );
+		if ( null === $this->repository || null === $this->validator ) {
+			WP_CLI::error( 'Repository or validator not available for single redirect validation.' );
 			return;
 		}
 
@@ -263,13 +175,14 @@ final class ValidateCommand extends WP_CLI_Command {
 		// User can explicitly disable with --no-check-urls if needed.
 		$check_urls = ! isset( $assoc_args['no-check-urls'] );
 
-		// Find the redirect.
+		// Find the redirect (including disabled ones).
 		if ( 'id' === $by ) {
 			$redirect = $this->repository->find_by_id( (int) $identifier );
 		} else {
 			try {
-				$source   = SourceUrl::from_string( $identifier );
-				$redirect = $this->repository->find_by_source( $source );
+				$source      = SourceUrl::from_string( $identifier );
+				$redirect_id = $this->repository->get_id_by_source( $source );
+				$redirect    = $redirect_id > 0 ? $this->repository->find_by_id( $redirect_id ) : null;
 			} catch ( \InvalidArgumentException $e ) {
 				WP_CLI::error( sprintf( 'Invalid source path: %s', $e->getMessage() ) );
 				return;
@@ -281,14 +194,8 @@ final class ValidateCommand extends WP_CLI_Command {
 			return;
 		}
 
-		// Get the underlying post for validation.
-		$post = get_post( $redirect->id() );
-		if ( null === $post ) {
-			WP_CLI::error( sprintf( 'Redirect post not found: %d', $redirect->id() ) );
-			return;
-		}
-
-		$issue = $this->check_redirect( $post, $check_urls );
+		// Validate the redirect.
+		$issue = $this->validator->validate_redirect_destination( $redirect, $check_urls );
 
 		$dest        = $redirect->destination();
 		$is_post_id  = $dest->is_post_id();
@@ -297,7 +204,7 @@ final class ValidateCommand extends WP_CLI_Command {
 		if ( null === $issue ) {
 			WP_CLI::success(
 				sprintf(
-					'Redirect %d is valid: %s → %s',
+					'Redirect %d is valid: %s -> %s',
 					$redirect->id(),
 					$redirect->source()->path(),
 					$destination
@@ -311,7 +218,7 @@ final class ValidateCommand extends WP_CLI_Command {
 			sprintf(
 				'Redirect %d has issue: %s',
 				$redirect->id(),
-				$issue
+				$issue->label()
 			)
 		);
 
@@ -319,7 +226,7 @@ final class ValidateCommand extends WP_CLI_Command {
 		WP_CLI::line( sprintf( '  To: %s', $destination ) );
 		WP_CLI::line( sprintf( '  Type: %s', $is_post_id ? 'post' : 'url' ) );
 		WP_CLI::line( sprintf( '  Status: %s', $redirect->is_active() ? 'enabled' : 'disabled' ) );
-		WP_CLI::line( sprintf( '  Issue: %s', $issue ) );
+		WP_CLI::line( sprintf( '  Issue: %s', $issue->description() ) );
 
 		// Fix if requested.
 		if ( $fix && $redirect->is_active() ) {
@@ -338,135 +245,106 @@ final class ValidateCommand extends WP_CLI_Command {
 	}
 
 	/**
-	 * Check a single redirect for issues.
+	 * Validate redirects in batch mode.
 	 *
-	 * @param \WP_Post $post       The redirect post.
-	 * @param bool     $check_urls Whether to check URL destinations.
-	 * @return string|null The issue description, or null if no issue.
+	 * @param array $assoc_args Key-value associative arguments.
 	 */
-	private function check_redirect( \WP_Post $post, bool $check_urls ): ?string {
-		$is_post_dest = $post->post_parent > 0;
-
-		if ( $is_post_dest ) {
-			return $this->check_post_destination( $post->post_parent );
+	private function validate_batch_mode( array $assoc_args ): void {
+		if ( null === $this->query_repository || null === $this->validator ) {
+			WP_CLI::error( 'Query repository or validator not available for batch validation.' );
+			return;
 		}
 
-		// URL destination.
-		$url = $post->post_excerpt;
+		$check_urls = isset( $assoc_args['check-urls'] );
+		$status     = $assoc_args['status'] ?? 'enabled';
+		$limit      = (int) ( $assoc_args['limit'] ?? 1000 );
+		$fix        = isset( $assoc_args['fix'] );
+		$format     = $assoc_args['format'] ?? 'table';
 
-		if ( empty( $url ) ) {
-			return 'Empty destination';
-		}
-
-		// Check if it's a relative path pointing to a post.
-		if ( $this->is_relative_path( $url ) ) {
-			return $this->check_relative_path( $url, $check_urls );
-		}
-
-		// External URL - only check if requested.
-		if ( $check_urls ) {
-			return $this->check_url( $url );
-		}
-
-		return null;
-	}
-
-	/**
-	 * Check if a post destination is valid.
-	 *
-	 * @param int $post_id The post ID.
-	 * @return string|null The issue, or null if valid.
-	 */
-	private function check_post_destination( int $post_id ): ?string {
-		$post = get_post( $post_id );
-
-		if ( null === $post ) {
-			return 'Post deleted';
-		}
-
-		if ( 'trash' === $post->post_status ) {
-			return 'Post trashed';
-		}
-
-		if ( 'publish' !== $post->post_status ) {
-			return sprintf( 'Post not published (status: %s)', $post->post_status );
-		}
-
-		return null;
-	}
-
-	/**
-	 * Check if a string is a relative path.
-	 *
-	 * @param string $url The URL to check.
-	 * @return bool True if relative path.
-	 */
-	private function is_relative_path( string $url ): bool {
-		return ! preg_match( '#^https?://#i', $url );
-	}
-
-	/**
-	 * Check if a relative path destination is valid.
-	 *
-	 * @param string $path       The relative path.
-	 * @param bool   $check_urls Whether to check via HTTP.
-	 * @return string|null The issue, or null if valid.
-	 */
-	private function check_relative_path( string $path, bool $check_urls ): ?string {
-		// Try to find a post by path.
-		$post = get_page_by_path( ltrim( $path, '/' ), OBJECT, array( 'post', 'page' ) );
-
-		if ( null !== $post ) {
-			if ( 'trash' === $post->post_status ) {
-				return 'Destination page trashed';
-			}
-			if ( 'publish' !== $post->post_status ) {
-				return sprintf( 'Destination page not published (status: %s)', $post->post_status );
-			}
-			return null;
-		}
-
-		// If URL checking is enabled, verify via HTTP.
-		if ( $check_urls ) {
-			$full_url = home_url( $path );
-			return $this->check_url( $full_url );
-		}
-
-		// Can't determine without HTTP check.
-		return null;
-	}
-
-	/**
-	 * Check if a URL returns a successful response.
-	 *
-	 * @param string $url The URL to check.
-	 * @return string|null The issue, or null if valid.
-	 */
-	private function check_url( string $url ): ?string {
-		$response = wp_remote_head(
-			$url,
-			array(
-				'timeout'     => 5,
-				'redirection' => 0, // Don't follow redirects.
-				'sslverify'   => false,
-			)
+		// Build criteria.
+		$criteria = new RedirectCriteria(
+			'any' === $status ? null : $status,
+			null, // destination_type.
+			null, // search.
+			'date',
+			'DESC',
+			$limit,
+			0
 		);
 
-		if ( is_wp_error( $response ) ) {
-			return sprintf( 'Request failed: %s', $response->get_error_message() );
+		WP_CLI::line( sprintf( 'Checking up to %d redirects...', $limit ) );
+		if ( $check_urls ) {
+			WP_CLI::warning( 'URL checking enabled - this may be slow.' );
 		}
 
-		$status_code = wp_remote_retrieve_response_code( $response );
+		// Fetch redirects.
+		$redirects = $this->query_repository->find_matching( $criteria );
+		$total     = count( $redirects );
 
-		if ( 404 === $status_code ) {
-			return 'Destination returns 404';
+		$start_time = microtime( true );
+		$progress   = \WP_CLI\Utils\make_progress_bar( 'Validating redirects', $total );
+
+		// Validate with progress tracking.
+		$issues = $this->validator->validate_batch(
+			$redirects,
+			$check_urls,
+			function () use ( $progress ): void {
+				$progress->tick();
+			}
+		);
+
+		$progress->finish();
+
+		// Calculate elapsed time.
+		$elapsed     = microtime( true ) - $start_time;
+		$elapsed_str = $this->format_elapsed_time( $elapsed );
+		$rate        = $total > 0 && $elapsed > 0 ? round( $total / $elapsed, 1 ) : 0;
+
+		// Handle count format.
+		if ( 'count' === $format ) {
+			WP_CLI::line( (string) count( $issues ) );
+			return;
 		}
 
-		if ( $status_code >= 500 ) {
-			return sprintf( 'Destination returns %d', $status_code );
+		// Show progress summary.
+		WP_CLI::line( sprintf( 'Checked %d redirects in %s (%.1f/sec)', $total, $elapsed_str, $rate ) );
+
+		if ( empty( $issues ) ) {
+			WP_CLI::success( 'No issues found.' );
+			return;
 		}
 
-		return null;
+		// Display results.
+		WP_CLI::warning( sprintf( 'Found %d broken redirect(s).', count( $issues ) ) );
+		WP_CLI::line( '' );
+
+		// Convert issues to array format for display.
+		$items = array_map(
+			fn( ValidationIssue $issue ) => $issue->to_array(),
+			$issues
+		);
+
+		\WP_CLI\Utils\format_items( $format, $items, array( 'ID', 'from', 'to', 'type', 'issue', 'status' ) );
+
+		// Fix if requested.
+		if ( $fix ) {
+			WP_CLI::line( '' );
+			$fixed = 0;
+			foreach ( $issues as $issue ) {
+				if ( $issue->redirect()->is_active() ) {
+					$result = wp_update_post(
+						array(
+							'ID'          => $issue->redirect_id(),
+							'post_status' => 'draft',
+						)
+					);
+					if ( $result && ! is_wp_error( $result ) ) {
+						++$fixed;
+					}
+				}
+			}
+			WP_CLI::success( sprintf( 'Disabled %d broken redirect(s).', $fixed ) );
+		}
 	}
 
 	/**

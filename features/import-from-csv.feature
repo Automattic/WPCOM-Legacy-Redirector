@@ -6,6 +6,7 @@ Feature: Import redirects from CSV
   Background:
     Given a WP installation with the WPCOM Legacy Redirector plugin
 
+  # Contract test: verifies file I/O and bulk import workflow.
   Scenario: Import redirects from a valid CSV file
     Given there is a published post with a slug of "destination-post"
     And a CSV file "redirects.csv" with content:
@@ -17,25 +18,5 @@ Feature: Import redirects from CSV
     When I run `wp wpcom-legacy-redirector import-from-csv --csv=/tmp/redirects.csv --skip-validation`
     Then STDOUT should contain:
       """
-      All of your redirects have been imported
-      """
-
-  Scenario: Import redirects with verbose output
-    Given there is a published post with a slug of "verbose-destination"
-    And a CSV file "verbose-redirects.csv" with content:
-      """
-      /verbose-test,/verbose-destination
-      """
-
-    When I run `wp wpcom-legacy-redirector import-from-csv --csv=/tmp/verbose-redirects.csv --skip-validation --verbose`
-    Then STDOUT should contain:
-      """
-      Adding (CSV) redirect for /verbose-test to /verbose-destination
-      """
-
-  Scenario: Error when CSV file does not exist
-    When I try `wp wpcom-legacy-redirector import-from-csv --csv=/tmp/nonexistent.csv`
-    Then STDERR should contain:
-      """
-      Error: Invalid 'csv' file
+      Processed 2 redirects.
       """

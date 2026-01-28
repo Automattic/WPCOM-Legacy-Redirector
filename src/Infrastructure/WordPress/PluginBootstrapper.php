@@ -183,7 +183,7 @@ final class PluginBootstrapper {
 
 		\WP_CLI::add_command(
 			'wpcom-legacy-redirector list',
-			new ListCommand()
+			new ListCommand( $this->container->query_repository() )
 		);
 
 		\WP_CLI::add_command(
@@ -219,7 +219,11 @@ final class PluginBootstrapper {
 
 		\WP_CLI::add_command(
 			'wpcom-legacy-redirector validate',
-			new ValidateCommand( $this->container->inner_repository() )
+			new ValidateCommand(
+				$this->container->inner_repository(),
+				$this->container->query_repository(),
+				$this->container->validator()
+			)
 		);
 	}
 }

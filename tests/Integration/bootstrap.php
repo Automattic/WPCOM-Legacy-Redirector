@@ -41,5 +41,10 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 WPIntegration\bootstrap_it();
 
+// Load WP_CLI stubs for CLI integration tests.
+// This must be loaded after WordPress bootstrap but before tests run.
+require_once dirname( __DIR__ ) . '/Stubs/WpCliUtilsStubs.php';
+require_once dirname( __DIR__ ) . '/Stubs/WordPressStubs.php';
+
 // Add custom test case.
 require __DIR__ . '/TestCase.php';

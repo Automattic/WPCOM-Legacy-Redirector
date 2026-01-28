@@ -9,7 +9,8 @@ declare( strict_types = 1 );
 
 namespace Automattic\LegacyRedirector\Infrastructure\WordPress\Cli;
 
-use Automattic\LegacyRedirector\Infrastructure\WordPress\PostType;
+use Automattic\LegacyRedirector\Domain\RedirectCriteria;
+use Automattic\LegacyRedirector\Domain\RedirectQueryRepositoryInterface;
 use WP_CLI;
 use WP_CLI_Command;
 
@@ -17,6 +18,22 @@ use WP_CLI_Command;
  * List redirects with filtering options.
  */
 final class ListCommand extends WP_CLI_Command {
+
+	/**
+	 * The query repository.
+	 *
+	 * @var RedirectQueryRepositoryInterface
+	 */
+	private RedirectQueryRepositoryInterface $query_repository;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param RedirectQueryRepositoryInterface $query_repository The query repository.
+	 */
+	public function __construct( RedirectQueryRepositoryInterface $query_repository ) {
+		$this->query_repository = $query_repository;
+	}
 
 	/**
 	 * List redirects.
@@ -114,96 +131,74 @@ final class ListCommand extends WP_CLI_Command {
 	 * @param array $assoc_args Key-value associative arguments.
 	 */
 	public function __invoke( array $args, array $assoc_args ): void {
-		$status           = $assoc_args['status'] ?? 'any';
-		$destination_type = $assoc_args['destination-type'] ?? 'any';
-		$search           = $assoc_args['search'] ?? '';
-		$limit            = (int) ( $assoc_args['limit'] ?? 100 );
-		$offset           = (int) ( $assoc_args['offset'] ?? 0 );
-		$orderby          = $assoc_args['orderby'] ?? 'date';
-		$order            = strtoupper( $assoc_args['order'] ?? 'DESC' );
-		$format           = $assoc_args['format'] ?? 'table';
+		$format   = $assoc_args['format'] ?? 'table';
+		$criteria = RedirectCriteria::from_args( $assoc_args );
 
-		// Map status filter to post status.
-		$post_status = 'any';
-		if ( 'enabled' === $status ) {
-			$post_status = 'publish';
-		} elseif ( 'disabled' === $status ) {
-			$post_status = 'draft';
-		} else {
-			$post_status = array( 'publish', 'draft' );
-		}
-
-		// Build query args.
-		$query_args = array(
-			'post_type'      => PostType::POST_TYPE,
-			'post_status'    => $post_status,
-			'posts_per_page' => $limit,
-			'offset'         => $offset,
-			'orderby'        => $orderby,
-			'order'          => $order,
-		);
-
-		// Add search if provided.
-		if ( ! empty( $search ) ) {
-			$query_args['s'] = $search;
-		}
-
-		// Add destination type filter via meta query.
-		if ( 'post' === $destination_type ) {
-			$query_args['post_parent__not_in'] = array( 0 );
-		} elseif ( 'url' === $destination_type ) {
-			$query_args['post_parent'] = 0;
-		}
-
-		$query = new \WP_Query( $query_args );
-		$posts = $query->posts;
-
-		// Handle count format.
+		// Handle count format - only needs count, not full results.
 		if ( 'count' === $format ) {
-			WP_CLI::line( (string) $query->found_posts );
+			$count = $this->query_repository->count_matching( $criteria );
+			WP_CLI::line( (string) $count );
 			return;
 		}
 
+		// Fetch redirects matching criteria.
+		$redirects   = $this->query_repository->find_matching( $criteria );
+		$total_count = $this->query_repository->count_matching( $criteria );
+
 		// Handle ids format.
 		if ( 'ids' === $format ) {
-			$ids = wp_list_pluck( $posts, 'ID' );
+			$ids = array_map(
+				fn( $redirect ) => $redirect->id(),
+				$redirects
+			);
 			WP_CLI::line( implode( ' ', $ids ) );
 			return;
 		}
 
-		if ( empty( $posts ) ) {
+		if ( empty( $redirects ) ) {
 			WP_CLI::warning( 'No redirects found.' );
 			return;
 		}
 
 		// Build output data.
-		$items = array();
-		foreach ( $posts as $post ) {
-			$to        = $post->post_parent > 0 ? $post->post_parent : $post->post_excerpt;
-			$dest_type = $post->post_parent > 0 ? 'post' : 'url';
-
-			$items[] = array(
-				'ID'     => $post->ID,
-				'from'   => $post->post_title,
-				'to'     => $to,
-				'type'   => $dest_type,
-				'status' => 'publish' === $post->post_status ? 'enabled' : 'disabled',
-			);
-		}
+		$items = array_map(
+			fn( $redirect ) => $this->format_redirect_for_output( $redirect ),
+			$redirects
+		);
 
 		\WP_CLI\Utils\format_items( $format, $items, array( 'ID', 'from', 'to', 'type', 'status' ) );
 
 		// Show pagination info for table format.
-		if ( 'table' === $format && $query->found_posts > count( $posts ) ) {
+		if ( 'table' === $format && $total_count > count( $redirects ) ) {
 			WP_CLI::line( '' );
 			WP_CLI::line(
 				sprintf(
 					'Showing %d-%d of %d redirects. Use --offset and --limit for pagination.',
-					$offset + 1,
-					$offset + count( $posts ),
-					$query->found_posts
+					$criteria->offset() + 1,
+					$criteria->offset() + count( $redirects ),
+					$total_count
 				)
 			);
 		}
+	}
+
+	/**
+	 * Format a redirect for CLI output.
+	 *
+	 * @param \Automattic\LegacyRedirector\Domain\Redirect $redirect The redirect.
+	 * @return array{ID: int|null, from: string, to: string|int, type: string, status: string}
+	 */
+	private function format_redirect_for_output( $redirect ): array {
+		$dest        = $redirect->destination();
+		$is_post_id  = $dest->is_post_id();
+		$destination = $is_post_id ? $dest->as_post_id()->value() : $dest->as_url()->value();
+
+		return array(
+			'ID'     => $redirect->id(),
+			'from'   => $redirect->source()->path(),
+			'to'     => $destination,
+			'type'   => $is_post_id ? 'post' : 'url',
+			'status' => $redirect->is_active() ? 'enabled' : 'disabled',
+		);
 	}
 }

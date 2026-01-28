@@ -77,18 +77,17 @@ final class DisableCommand extends WP_CLI_Command {
 		$lookup = $args[0];
 		$by     = $assoc_args['by'] ?? 'source';
 
-		// Find and disable the redirect.
+		// Find and disable the redirect (including already disabled ones).
 		if ( 'id' === $by ) {
 			$redirect_id = (int) $lookup;
 		} else {
 			try {
-				$source   = SourceUrl::from_string( $lookup );
-				$redirect = $this->repository->find_by_source( $source );
-				if ( null === $redirect ) {
+				$source      = SourceUrl::from_string( $lookup );
+				$redirect_id = $this->repository->get_id_by_source( $source );
+				if ( 0 === $redirect_id ) {
 					WP_CLI::error( sprintf( 'Redirect not found: %s', $lookup ) );
 					return;
 				}
-				$redirect_id = $redirect->id();
 			} catch ( \InvalidArgumentException $e ) {
 				WP_CLI::error( sprintf( 'Invalid source path: %s', $e->getMessage() ) );
 				return;

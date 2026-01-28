@@ -89,13 +89,14 @@ final class GetCommand extends WP_CLI_Command {
 		$field  = $assoc_args['field'] ?? null;
 		$format = $assoc_args['format'] ?? 'table';
 
-		// Find the redirect.
+		// Find the redirect (including disabled ones).
 		if ( 'id' === $by ) {
 			$redirect = $this->repository->find_by_id( (int) $lookup );
 		} else {
 			try {
-				$source   = SourceUrl::from_string( $lookup );
-				$redirect = $this->repository->find_by_source( $source );
+				$source      = SourceUrl::from_string( $lookup );
+				$redirect_id = $this->repository->get_id_by_source( $source );
+				$redirect    = $redirect_id > 0 ? $this->repository->find_by_id( $redirect_id ) : null;
 			} catch ( \InvalidArgumentException $e ) {
 				WP_CLI::error( sprintf( 'Invalid source path: %s', $e->getMessage() ) );
 				return;
