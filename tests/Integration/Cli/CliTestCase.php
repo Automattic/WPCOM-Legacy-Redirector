@@ -132,11 +132,11 @@ abstract class CliTestCase extends TestCase {
 	protected function assert_command_success( string $message = '' ): void {
 		$this->assertTrue(
 			$this->output->had_success(),
-			$message ?: 'Expected command to succeed. Output: ' . $this->get_output()
+			'' !== $message ? $message : 'Expected command to succeed. Output: ' . $this->get_output()
 		);
 		$this->assertFalse(
 			$this->output->had_error(),
-			$message ?: 'Expected no error. Got: ' . $this->get_stderr()
+			'' !== $message ? $message : 'Expected no error. Got: ' . $this->get_stderr()
 		);
 	}
 
@@ -149,7 +149,7 @@ abstract class CliTestCase extends TestCase {
 	protected function assert_command_error( string $message = '' ): void {
 		$this->assertTrue(
 			$this->output->had_error(),
-			$message ?: 'Expected command to fail. Output: ' . $this->get_output()
+			'' !== $message ? $message : 'Expected command to fail. Output: ' . $this->get_output()
 		);
 	}
 
@@ -164,7 +164,7 @@ abstract class CliTestCase extends TestCase {
 		$this->assertStringContainsString(
 			$expected,
 			$this->get_stdout(),
-			$message ?: sprintf( 'Expected stdout to contain "%s". Got: %s', $expected, $this->get_stdout() )
+			'' !== $message ? $message : sprintf( 'Expected stdout to contain "%s". Got: %s', $expected, $this->get_stdout() )
 		);
 	}
 
@@ -179,7 +179,7 @@ abstract class CliTestCase extends TestCase {
 		$this->assertStringContainsString(
 			$expected,
 			$this->get_stderr(),
-			$message ?: sprintf( 'Expected stderr to contain "%s". Got: %s', $expected, $this->get_stderr() )
+			'' !== $message ? $message : sprintf( 'Expected stderr to contain "%s". Got: %s', $expected, $this->get_stderr() )
 		);
 	}
 
@@ -194,7 +194,7 @@ abstract class CliTestCase extends TestCase {
 		$this->assertStringNotContainsString(
 			$unexpected,
 			$this->get_stdout(),
-			$message ?: sprintf( 'Expected stdout to not contain "%s". Got: %s', $unexpected, $this->get_stdout() )
+			'' !== $message ? $message : sprintf( 'Expected stdout to not contain "%s". Got: %s', $unexpected, $this->get_stdout() )
 		);
 	}
 
@@ -236,7 +236,7 @@ abstract class CliTestCase extends TestCase {
 	protected function assert_warning_contains( string $expected, string $message = '' ): void {
 		$this->assertTrue(
 			$this->output->had_warning(),
-			$message ?: 'Expected a warning. Output: ' . $this->get_output()
+			'' !== $message ? $message : 'Expected a warning. Output: ' . $this->get_output()
 		);
 		$this->assert_stdout_contains( $expected, $message );
 	}

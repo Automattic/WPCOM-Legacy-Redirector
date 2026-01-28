@@ -63,6 +63,7 @@ enum ValidationIssueType: string {
 	 * @return string
 	 */
 	public function label(): string {
+		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Valid enum syntax.
 		return match ( $this ) {
 			self::POST_TRASHED     => 'Post trashed',
 			self::POST_DELETED     => 'Post deleted',
@@ -82,6 +83,7 @@ enum ValidationIssueType: string {
 	 * @return string
 	 */
 	public function description( ?string $extra_info = null ): string {
+		// phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- Valid enum syntax.
 		$base = match ( $this ) {
 			self::POST_TRASHED     => 'The destination post has been moved to trash',
 			self::POST_DELETED     => 'The destination post no longer exists',

@@ -10,6 +10,8 @@
  */
 
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound -- Stubs file with multiple WP class stubs.
+// phpcs:disable Generic.CodeAnalysis.UnusedFunctionParameter -- Stubs may have unused parameters to match original signatures.
+// phpcs:disable Universal.NamingConventions.NoReservedKeywordParameterNames -- Stubs match WP_CLI's original signatures.
 
 // WordPress constants for unit tests.
 if ( ! defined( 'OBJECT' ) ) {
