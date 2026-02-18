@@ -101,7 +101,7 @@ final class ImportFromMetaCommand extends WP_CLI_Command {
 
 		$offset     = isset( $assoc_args['start'] ) ? intval( $assoc_args['start'] ) : 0;
 		$end_offset = isset( $assoc_args['end'] ) ? intval( $assoc_args['end'] ) : 99999999;
-		$meta_key   = isset( $assoc_args['meta_key'] ) ? sanitize_key( $assoc_args['meta_key'] ) : '';
+		$meta_key   = isset( $assoc_args['meta-key'] ) ? sanitize_key( $assoc_args['meta-key'] ) : '';
 		$skip_dupes = isset( $assoc_args['skip_dupes'] ) ? (bool) intval( $assoc_args['skip_dupes'] ) : false;
 		$format     = \WP_CLI\Utils\get_flag_value( $assoc_args, 'format' );
 		$dry_run    = isset( $assoc_args['dry_run'] );
