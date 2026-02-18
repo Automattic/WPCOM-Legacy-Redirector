@@ -37,9 +37,23 @@ const VERSION     = '2.0.0-alpha';
 \define( 'WPCOM_LEGACY_REDIRECTOR_FILE', __FILE__ );
 \define( 'WPCOM_LEGACY_REDIRECTOR_VERSION', VERSION );
 
-// Load Composer autoloader for PSR-4 classes (src/).
+// Load Composer autoloader for PSR-4 classes (src/), or register a simple fallback.
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
+} else {
+	spl_autoload_register(
+		function ( string $class_name ): void {
+			$prefix = 'Automattic\\LegacyRedirector\\';
+			if ( ! str_starts_with( $class_name, $prefix ) ) {
+				return;
+			}
+			$relative = substr( $class_name, strlen( $prefix ) );
+			$file     = __DIR__ . '/src/' . str_replace( '\\', '/', $relative ) . '.php';
+			if ( file_exists( $file ) ) {
+				require_once $file;
+			}
+		}
+	);
 }
 
 // Initialize the plugin.
